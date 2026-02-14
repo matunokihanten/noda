@@ -1,0 +1,160 @@
+2026-02-13 04:46:04 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:04 +00:00: Require stack:
+2026-02-13 04:46:04 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:04 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:04 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:04 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:04 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:04 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:04 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:04 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:04 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:04 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:04 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:04 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:04 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:04 +00:00: }
+2026-02-13 04:46:04 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:04 +00:00: Require stack:
+2026-02-13 04:46:04 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:04 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:04 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:04 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:04 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:04 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:04 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:04 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:04 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:04 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:04 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:04 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:04 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:04 +00:00: }
+2026-02-13 04:46:05 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:05 +00:00: Require stack:
+2026-02-13 04:46:05 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:05 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:05 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:05 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:05 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:05 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:05 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:05 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:05 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:05 +00:00: }
+2026-02-13 04:46:05 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:05 +00:00: Require stack:
+2026-02-13 04:46:05 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:05 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:05 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:05 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:05 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:05 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:05 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:05 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:05 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:05 +00:00: }
+2026-02-13 04:46:05 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:05 +00:00: Require stack:
+2026-02-13 04:46:05 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:05 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:05 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:05 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:05 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:05 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:05 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:05 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:05 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:05 +00:00: }
+2026-02-13 04:46:05 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:05 +00:00: Require stack:
+2026-02-13 04:46:05 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:05 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:05 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:05 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:05 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:05 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:05 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:05 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:05 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:05 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:05 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:05 +00:00: }
+2026-02-13 04:46:06 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:06 +00:00: Require stack:
+2026-02-13 04:46:06 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:06 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:06 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:06 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:06 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:06 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:06 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:06 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:06 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:06 +00:00: }
+2026-02-13 04:46:06 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:06 +00:00: Require stack:
+2026-02-13 04:46:06 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:06 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:06 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:06 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:06 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:06 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:06 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:06 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:06 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:06 +00:00: }
+2026-02-13 04:46:06 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:06 +00:00: Require stack:
+2026-02-13 04:46:06 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:06 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:06 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:06 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:06 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:06 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:06 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:06 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:06 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:06 +00:00: }
+2026-02-13 04:46:06 +00:00: Error: Cannot find module 'express'
+2026-02-13 04:46:06 +00:00: Require stack:
+2026-02-13 04:46:06 +00:00: - /home/user/webapp/app.js
+2026-02-13 04:46:06 +00:00:     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-02-13 04:46:06 +00:00:     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+2026-02-13 04:46:06 +00:00:     at require (node:internal/modules/helpers:182:18)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/home/user/webapp/app.js:1:17)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+2026-02-13 04:46:06 +00:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+2026-02-13 04:46:06 +00:00:     at Module.load (node:internal/modules/cjs/loader:1266:32)
+2026-02-13 04:46:06 +00:00:     at Module._load (node:internal/modules/cjs/loader:1091:12)
+2026-02-13 04:46:06 +00:00:     at Object.<anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-13 04:46:06 +00:00:     at Module._compile (node:internal/modules/cjs/loader:1521:14) {
+2026-02-13 04:46:06 +00:00:   code: 'MODULE_NOT_FOUND',
+2026-02-13 04:46:06 +00:00:   requireStack: [ '/home/user/webapp/app.js' ]
+2026-02-13 04:46:06 +00:00: }

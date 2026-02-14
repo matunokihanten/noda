@@ -1,0 +1,11 @@
+{
+  "queue": [],
+  "nextNumber": 42,
+  "isAccepting": true,
+  "stats": {
+    "totalToday": 0,
+    "completedToday": 0,
+    "averageWaitTime": 0
+  },
+  "lastUpdated": "2026-02-14T09:38:11.563Z"
+}
