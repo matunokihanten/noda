@@ -3,142 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>店舗受付</title>
+    <title>店舗受付 & 発券 | 松乃木飯店</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="js/StarWebPrintBuilder.js"></script>
+    <script src="js/StarWebPrintTrader.js"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; background: #2c3e50; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        header { background: #8b0000; color: white; padding: 10px; text-align: center; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #fdfaf5; }
+
+        /* 左パネル：受付入力エリア */
+        .left-panel { width: 40%; background: white; padding: 20px; border-right: 2px solid #ddd; display: flex; flex-direction: column; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 10; }
         
-        .main { display: flex; flex: 1; padding: 10px; gap: 10px; height: 100%; }
+        h2 { color: #8b0000; border-bottom: 2px solid #8b0000; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5em; }
         
-        /* 左パネル：入力 */
-        .left { flex: 0 0 450px; display: flex; flex-direction: column; gap: 10px; }
-        .panel { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .form-group { margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #333; }
         
-        /* 右パネル：リスト */
-        .right { flex: 1; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; overflow-y: auto; }
-        
-        /* コントロール */
-        .row { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px; }
-        .btn-circle { width: 50px; height: 50px; border-radius: 50%; border: 1px solid #ccc; font-size: 1.5em; background: #eee; cursor: pointer; }
-        .num { font-size: 2em; font-weight: bold; width: 60px; text-align: center; }
+        /* 入力フォーム装飾 */
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; font-size: 1.2em; border: 2px solid #ccc; border-radius: 8px; }
+        input:focus { border-color: #8b0000; outline: none; }
         
         /* 座席ボタン */
-        .seat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
-        .seat-btn { padding: 15px; border: 2px solid #ddd; border-radius: 8px; background: #f9f9f9; font-size: 1.1em; font-weight: bold; cursor: pointer; }
-        .seat-btn.active { background: #8b0000; color: white; border-color: #8b0000; }
+        .seat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .seat-btn { padding: 15px; border: 2px solid #ccc; background: #fff; border-radius: 8px; font-size: 1.1em; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .seat-btn.selected { background: #8b0000; color: white; border-color: #8b0000; }
         
-        .btn-big { width: 100%; padding: 15px; background: #27ae60; color: white; font-size: 1.5em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        /* 送信ボタン */
+        .submit-btn { background: #d35400; color: white; border: none; padding: 20px; width: 100%; font-size: 1.4em; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: auto; box-shadow: 0 4px 0 #a04000; }
+        .submit-btn:active { transform: translateY(4px); box-shadow: none; }
+        .submit-btn:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
 
-        /* リストアイテム */
-        .q-item { background: white; padding: 10px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .q-id { font-size: 1.4em; font-weight: bold; color: #8b0000; }
+        /* プリンター設定スイッチ */
+        .printer-toggle { background: #e8f6f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #1abc9c; display: flex; align-items: center; justify-content: space-between; }
+        .printer-status { font-weight: bold; color: #16a085; display: flex; align-items: center; gap: 5px; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #1abc9c; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* 右パネル：待ち状況リスト */
+        .right-panel { width: 60%; background: #fdfaf5; padding: 20px; overflow-y: auto; }
+        .queue-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        
+        .guest-card { background: white; border: 2px solid #ddd; border-radius: 10px; padding: 15px; position: relative; transition: 0.3s; }
+        .guest-card.arrived { border-color: #27ae60; background: #eafaf1; }
+        .guest-card.web-user { border-left: 5px solid #9b59b6; } /* Web予約は紫 */
+        .guest-card.shop-user { border-left: 5px solid #3498db; } /* 店舗受付は青 */
+        
+        .card-id { font-size: 1.8em; font-weight: bold; color: #333; margin-bottom: 5px; }
+        .card-meta { font-size: 0.9em; color: #666; margin-bottom: 10px; }
+        .arrival-btn { width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .arrival-btn.done { background: #7f8c8d; cursor: default; }
+        
+        .header-stats { display: flex; justify-content: space-between; margin-bottom: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
     </style>
 </head>
 <body>
-    <header><h1>🏮 松乃木飯店 店舗受付</h1></header>
-    <div class="main">
-        <div class="left">
-            <div id="inputForm" class="panel">
-                <div style="text-align:center; margin-bottom:5px;">大人</div>
-                <div class="row">
-                    <button class="btn-circle" onclick="nums.adults=Math.max(1,nums.adults-1);upd()">-</button>
-                    <span id="d_adults" class="num">2</span>
-                    <button class="btn-circle" onclick="nums.adults++;upd()">+</button>
-                </div>
-                
-                <div style="text-align:center; margin-bottom:5px;">子供</div>
-                <div class="row">
-                    <button class="btn-circle" onclick="nums.children=Math.max(0,nums.children-1);upd()">-</button>
-                    <span id="d_children" class="num">0</span>
-                    <button class="btn-circle" onclick="nums.children++;upd()">+</button>
-                </div>
-
-                <div class="seat-grid">
-                    <button class="seat-btn active" onclick="selSeat(this, 'どこでも')">どこでも</button>
-                    <button class="seat-btn" onclick="selSeat(this, 'カウンター')">カウンター</button>
-                    <button class="seat-btn" onclick="selSeat(this, 'テーブル')">テーブル</button>
-                    <button class="seat-btn" onclick="selSeat(this, 'お座敷')">お座敷</button>
-                </div>
-
-                <button class="btn-big" onclick="send()">発券する</button>
+    <div class="left-panel">
+        <h2>📠 店舗受付 & 発券</h2>
+        
+        <div class="printer-toggle">
+            <div class="printer-status">
+                <span>🖨️ レシート自動発券</span>
             </div>
+            <label class="switch">
+                <input type="checkbox" id="autoPrint" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
 
-            <div id="ticketView" class="panel" style="display:none; text-align:center; padding:30px;">
-                <div style="font-size:1.2em;">受付番号</div>
-                <div id="resNum" style="font-size:5em; font-weight:bold; color:#8b0000; margin:20px 0;">--</div>
-                <button class="btn-big" style="background:#7f8c8d" onclick="resetForm()">次の方へ</button>
+        <div class="form-group">
+            <label>人数 (大人)</label>
+            <input type="number" id="adults" value="2" min="1">
+        </div>
+        <div class="form-group" style="display:flex; gap:10px;">
+            <div style="flex:1;">
+                <label>子供</label>
+                <input type="number" id="children" value="0" min="0">
+            </div>
+            <div style="flex:1;">
+                <label>幼児</label>
+                <input type="number" id="infants" value="0" min="0">
             </div>
         </div>
 
-        <div class="right">
-            <h3 style="color:white; text-align:center;">待ち状況</h3>
-            <div id="list"></div>
+        <div class="form-group">
+            <label>お名前 (任意)</label>
+            <input type="text" id="name" placeholder="お名前">
         </div>
+
+        <div class="form-group">
+            <label>座席希望</label>
+            <div class="seat-grid">
+                <button class="seat-btn selected" onclick="selectSeat('どこでも')">どこでも</button>
+                <button class="seat-btn" onclick="selectSeat('カウンター')">カウンター</button>
+                <button class="seat-btn" onclick="selectSeat('テーブル')">テーブル</button>
+                <button class="seat-btn" onclick="selectSeat('お座敷')">お座敷</button>
+            </div>
+        </div>
+
+        <button class="submit-btn" onclick="register()">発券して受付完了</button>
+    </div>
+
+    <div class="right-panel">
+        <div class="header-stats">
+            <div>待ち組数: <strong id="waitCount" style="font-size:1.5em; color:#d35400;">0</strong> 組</div>
+            <div id="statusText">受付中</div>
+        </div>
+        <h3 style="margin-bottom:15px; color:#666;">Web予約・店舗受付一覧</h3>
+        <div id="queueList" class="queue-list">
+            </div>
     </div>
 
     <script>
         const socket = io();
-        let nums = { adults: 2, children: 0 };
-        let seat = 'どこでも';
+        
+        // ★ プリンターのIPアドレス (調査したIPを設定)
+        const PRINTER_IP = '192.168.1.190';
+        const PRINTER_URL = `http://${PRINTER_IP}/StarWebPRNT/SendMessage`;
 
-        function upd() { 
-            document.getElementById('d_adults').innerText = nums.adults;
-            document.getElementById('d_children').innerText = nums.children;
+        let selectedSeat = 'どこでも';
+        let myLastRegisterId = null; // 自分が最後に登録したID（重複印刷防止用）
+
+        // 座席選択ロジック
+        function selectSeat(seat) {
+            selectedSeat = seat;
+            document.querySelectorAll('.seat-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if(btn.innerText === seat) btn.classList.add('selected');
+            });
         }
 
-        function selSeat(btn, val) {
-            document.querySelectorAll('.seat-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            seat = val;
-        }
+        // 登録送信
+        function register() {
+            const adults = document.getElementById('adults').value;
+            const children = document.getElementById('children').value;
+            const infants = document.getElementById('infants').value;
+            const name = document.getElementById('name').value;
 
-        function send() {
-            socket.emit('register', { type: 'shop', ...nums, infants:0, pref: seat });
-            playLongChime(); // 長い音を鳴らす
+            if (adults < 1) { alert('大人1名以上で入力してください'); return; }
+            
+            // サーバーへ送信 (type: 'shop' で送信)
+            socket.emit('register', {
+                type: 'shop',
+                adults: Number(adults),
+                children: Number(children),
+                infants: Number(infants),
+                pref: selectedSeat,
+                name: name
+            });
+            
+            // フォームリセット
+            resetForm();
         }
 
         function resetForm() {
-            document.getElementById('inputForm').style.display='block';
-            document.getElementById('ticketView').style.display='none';
-            nums = { adults: 2, children: 0 };
-            selSeat(document.querySelectorAll('.seat-btn')[0], 'どこでも');
-            upd();
+            document.getElementById('name').value = '';
+            document.getElementById('adults').value = 2;
+            document.getElementById('children').value = 0;
+            document.getElementById('infants').value = 0;
+            selectSeat('どこでも');
         }
 
-        socket.on('registered', g => {
-            if(g.type === 'shop') {
-                document.getElementById('inputForm').style.display='none';
-                document.getElementById('ticketView').style.display='block';
-                document.getElementById('resNum').innerText = g.displayId;
+        // ==========================================
+        // ★ スター精密 mC-Print3 印刷ロジック
+        // ==========================================
+        function printReceipt(g) {
+            try {
+                // ライブラリが読み込まれていない場合のガード
+                if (typeof StarWebPrintBuilder === 'undefined') {
+                    alert('印刷エラー: ライブラリが見つかりません。public/jsフォルダを確認してください。');
+                    return;
+                }
+
+                const builder = new StarWebPrintBuilder();
+                let request = '';
+
+                request += builder.createInitializationElement();
+
+                // --- レシートデザイン作成 ---
+                // 中央揃え・ヘッダー
+                request += builder.createAlignmentElement({ alignment: 'center' });
+                request += builder.createTextElement({ data: '🏮 松乃木飯店\n', emphasis: true, width: 1 });
+                request += builder.createTextElement({ data: '受付票\n\n' });
+
+                // 受付番号（特大）
+                request += builder.createTextElement({ data: '番号\n' });
+                request += builder.createTextElement({ data: g.displayId + '\n', width: 2, height: 2, emphasis: true });
+                request += builder.createTextElement({ data: '\n' });
+
+                // 詳細情報（左揃え）
+                request += builder.createAlignmentElement({ alignment: 'left' });
+                request += builder.createTextElement({ data: '--------------------------------\n' });
+                request += builder.createTextElement({ data: '受付日時: ' + g.time + '\n' });
+                if(g.name) {
+                    request += builder.createTextElement({ data: 'お名前　: ' + g.name + ' 様\n' });
+                }
+                request += builder.createTextElement({ data: '人数　　: 大人' + g.adults + ' 子' + g.children + ' 幼' + g.infants + '\n' });
+                request += builder.createTextElement({ data: '座席希望: ' + g.pref + '\n' });
+                request += builder.createTextElement({ data: '--------------------------------\n' });
+
+                // フッター（中央揃え）
+                request += builder.createAlignmentElement({ alignment: 'center' });
+                request += builder.createTextElement({ data: '\nLINEやWebで順番を確認できます。\n' });
+                request += builder.createTextElement({ data: '係員がお呼びするまで\nお待ちください。\n\n' });
+
+                // 用紙カット
+                request += builder.createCutPaperElement({ type: 'full' });
+
+                // --- プリンターへ送信 ---
+                const trader = new StarWebPrintTrader({ url: PRINTER_URL });
+                
+                trader.onReceive = function(response) {
+                    if (response.traderSuccess && response.traderStatus === '0') {
+                        console.log('印刷成功');
+                    } else {
+                        console.error('印刷失敗詳細:', response);
+                    }
+                };
+                
+                trader.onError = function(e) {
+                    console.error('接続エラー:', e);
+                    alert('プリンターに接続できません。\nIPアドレス: ' + PRINTER_IP + ' を確認してください。');
+                };
+
+                trader.sendMessage({ request: request });
+
+            } catch (e) {
+                console.error('印刷ロジックエラー:', e);
+                alert('印刷処理中にエラーが発生しました。');
+            }
+        }
+
+        // ==========================================
+        // Socket.IO イベント処理
+        // ==========================================
+        socket.on('registered', (guest) => {
+            // 自動印刷スイッチがON かつ 店舗受付(shop)の場合のみ印刷
+            // ※ Web予約も印刷したい場合は g.type === 'web' の条件を追加する
+            const isAutoPrint = document.getElementById('autoPrint').checked;
+
+            if (isAutoPrint && guest.type === 'shop') {
+                // 自分が今登録したものか、または別の端末で登録されたものか
+                // ここでは「店舗受付」されたものはすべてこのタブレットから印刷する運用とします
+                printReceipt(guest);
+            }
+            
+            // 自分のリクエストだった場合、通知音
+            if (myLastRegisterId === guest.displayId) {
+                // 必要なら音を鳴らす処理
             }
         });
 
-        socket.on('update', d => {
-            document.getElementById('list').innerHTML = d.queue.map(g => `
-                <div class="q-item">
-                    <span class="q-id">${g.displayId}</span>
-                    <span>${g.adults+g.children}名 / ${g.pref}</span>
-                </div>
-            `).join('');
-        });
+        socket.on('init', updateUI);
+        socket.on('update', updateUI);
 
-        // 2秒間鳴るチャイム（ピ・ピ・ピ・ピ）
-        function playLongChime() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                [0, 0.5, 1.0, 1.5].forEach(t => {
-                    const osc = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    osc.connect(g); g.connect(ctx.destination);
-                    osc.frequency.value = 880; 
-                    g.gain.setValueAtTime(0.2, ctx.currentTime + t);
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + 0.3);
-                    osc.start(ctx.currentTime + t);
-                    osc.stop(ctx.currentTime + t + 0.3);
-                });
-            } catch(e) {}
+        // 到着通知の処理（右側リストの更新）
+        function updateUI(data) {
+            const list = document.getElementById('queueList');
+            document.getElementById('waitCount').innerText = data.queue.length;
+            
+            if(data.queue.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#999; grid-column:1/-1;">待ち客はいません</p>';
+                return;
+            }
+
+            list.innerHTML = data.queue.map(g => {
+                const isArrived = g.arrived;
+                const typeClass = g.type === 'web' ? 'web-user' : 'shop-user';
+                const typeLabel = g.type === 'web' ? 'Web予約' : '店舗受付';
+                
+                let btnHtml = '';
+                if (!isArrived && g.type === 'web') {
+                    btnHtml = `<button class="arrival-btn" onclick="markArrived('${g.displayId}')">到着確認 (タップ)</button>`;
+                } else if (isArrived) {
+                    btnHtml = `<button class="arrival-btn done">到着済み</button>`;
+                } else {
+                    btnHtml = `<div style="font-size:0.8em; color:#666; text-align:center;">店内でお待ちです</div>`;
+                }
+
+                return `
+                    <div class="guest-card ${isArrived ? 'arrived' : ''} ${typeClass}">
+                        <div style="float:right; font-size:0.8em; font-weight:bold; color:#666;">${typeLabel}</div>
+                        <div class="card-id">${g.displayId}</div>
+                        <div class="card-meta">
+                            👤 大人${g.adults}, 小${g.children}, 幼${g.infants}<br>
+                            🪑 ${g.pref}<br>
+                            🕒 ${g.time} 受付
+                        </div>
+                        ${btnHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function markArrived(id) {
+            if(confirm('「' + id + '」のお客様を到着済みにしますか？')) {
+                socket.emit('markArrived', { displayId: id });
+            }
         }
     </script>
 </body>
