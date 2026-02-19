@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>プリンター接続テスト</title>
+    <script src="js/StarWebPrintBuilder.js"></script>
+    <script src="js/StarWebPrintTrader.js"></script>
+</head>
+<body style="padding: 20px; font-family: sans-serif;">
+
+    <h2>🖨️ プリンター接続テスト</h2>
+    
+    <p>
+        設定したIPアドレス: 
+        <input type="text" id="ipAddress" value="192.168.1.200" style="padding:5px; font-size:1.2em; width: 150px;">
+    </p>
+
+    <button onclick="testPrint()" style="padding: 15px 30px; font-size: 1.2em; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        テスト印刷を実行する
+    </button>
+
+    <div id="status" style="margin-top: 20px; padding: 10px; background: #f0f0f0;">
+        ここに結果が表示されます...
+    </div>
+
+    <script>
+        function testPrint() {
+            const ip = document.getElementById('ipAddress').value;
+            const url = `http://${ip}/StarWebPRNT/SendMessage`;
+            const statusDiv = document.getElementById('status');
+
+            statusDiv.innerHTML = '🔄 送信中... (' + url + ')';
+
+            try {
+                // 1. 印刷データの作成
+                const builder = new StarWebPrintBuilder();
+                let request = '';
+
+                request += builder.createInitializationElement();
+                request += builder.createAlignmentElement({ alignment: 'center' });
+                request += builder.createTextElement({ data: 'CONNECTION TEST\n', emphasis: true, width: 2, height: 2 });
+                request += builder.createTextElement({ data: '----------------\n' });
+                request += builder.createTextElement({ data: '接続成功！\n' });
+                request += builder.createTextElement({ data: '松乃木飯店 システム\n\n\n' });
+                request += builder.createCutPaperElement({ type: 'partial' });
+
+                // 2. プリンターへ送信
+                const trader = new StarWebPrintTrader({ url: url });
+
+                trader.onReceive = function (response) {
+                    if (response.traderSuccess && response.traderStatus === '0') {
+                        statusDiv.innerHTML = '<span style="color:green; font-weight:bold;">✅ 成功！印刷されました。</span>';
+                        statusDiv.innerHTML += '<br>このIPアドレス (' + ip + ') を本番コードに設定してください。';
+                    } else {
+                        statusDiv.innerHTML = '<span style="color:red;">❌ 失敗: プリンターは反応しましたがエラーです。</span>';
+                        console.log(response);
+                    }
+                };
+
+                trader.onError = function (response) {
+                    statusDiv.innerHTML = '<span style="color:red;">❌ 通信エラー</span><br>PCとプリンターが繋がりません。<br>・IPアドレス設定は合っていますか？<br>・同じWi-Fiに繋がっていますか？';
+                };
+
+                trader.sendMessage({ request: request });
+
+            } catch (e) {
+                statusDiv.innerHTML = '❌ エラー: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

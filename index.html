@@ -3,145 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>松乃木飯店 受付</title>
+    <title>松乃木飯店 順番管理システム</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { font-family: sans-serif; background: #fdfaf5; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: #8b0000; color: white; padding: 10px; text-align: center; height: 50px; box-sizing: border-box; }
-        .main-container { display: flex; flex: 1; height: calc(100vh - 50px); }
-
-        /* 左側：入力 */
-        .left-panel { width: 400px; padding: 15px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; }
-        .form-box { background: white; padding: 15px; border-radius: 15px; width: 100%; border: 1px solid #d4b483; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
-        /* 人数入力コントロール */
-        .number-control { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .control-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; }
-        .num-display { font-size: 1.8em; font-weight: bold; min-width: 50px; text-align: center; color: #8b0000; }
-        .btn-step { background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 50%; font-size: 1.5em; cursor: pointer; }
-        .quick-nums { display: flex; gap: 5px; margin-top: 8px; justify-content: center; }
-        .btn-quick { background: #fff; border: 1px solid #d4b483; padding: 5px 12px; border-radius: 5px; font-size: 0.9em; cursor: pointer; }
-
-        select { padding: 12px; margin: 10px 0; width: 100%; font-size: 1.1em; border: 1px solid #ddd; border-radius: 5px; }
-        .btn-submit { background: #8b0000; color: white; border: none; padding: 18px; width: 100%; font-size: 1.2em; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        /* 右側：6列グリッド */
-        .right-panel { flex: 1; padding: 15px; background: #fff; overflow-y: auto; }
-        .grid-container { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-        .queue-card { background: #fffcf5; border: 1px solid #d4b483; border-radius: 8px; padding: 8px; text-align: center; }
-        .queue-id { font-weight: bold; color: #8b0000; font-size: 1.2em; display: block; }
-        .queue-info { font-size: 0.75em; color: #666; line-height: 1.2; }
-
-        .complete-id { font-size: 4.5em; color: #8b0000; font-weight: bold; text-align: center; margin: 10px 0; }
-        @media (max-width: 1000px) { .grid-container { grid-template-columns: repeat(3, 1fr); } .left-panel { width: 320px; } }
+        /* 共通スタイル [cite: 238-290, 365-438] */
+        body { font-family: sans-serif; background: #fdfaf5; margin: 0; padding: 0; }
+        .view { display: none; padding: 20px; }
+        .active { display: block; }
+        header { background: #8b0000; color: white; padding: 15px; text-align: center; }
+        .btn { padding: 15px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-reg { background: #8b0000; color: white; }
+        .btn-print { background: #27ae60; color: white; text-decoration: none; display: inline-block; text-align: center; }
+        .card { background: white; border: 2px solid #d4b483; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .queue-item { border-bottom: 1px solid #eee; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .called { background: #fff3cd; font-weight: bold; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body>
-    <header><h1 style="margin:0; font-size: 1.2em;">松乃木飯店 席待ち受付</h1></header>
-    <div class="main-container">
-        <div class="left-panel">
-            <div id="formArea" class="form-box">
-                <h3 style="margin:0 0 10px; color:#8b0000; text-align:center;">新規受付</h3>
-                
-                <div class="number-control">
-                    <label style="font-size:0.8em; font-weight:bold;">大人 (中学生以上)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('adults', -1)">-</button>
-                        <span id="display-adults" class="num-display">2</span>
-                        <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
-                    </div>
-                    <div class="quick-nums">
-                        <button class="btn-quick" onclick="setNum('adults', 1)">1名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 2)">2名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 4)">4名</button>
-                    </div>
-                </div>
+    <header><h1 id="mainTitle">🏮 松乃木飯店</h1></header>
 
-                <div class="number-control">
-                    <label style="font-size:0.8em; font-weight:bold;">子供 (小学生)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('children', -1)">-</button>
-                        <span id="display-children" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('children', 1)">+</button>
-                    </div>
-                </div>
-
-                <div class="number-control">
-                    <label style="font-size:0.8em; font-weight:bold;">幼児 (未就学児)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('infants', -1)">-</button>
-                        <span id="display-infants" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('infants', 1)">+</button>
-                    </div>
-                </div>
-
-                <select id="pref"><option>どこでも</option><option>カウンター</option><option>テーブル</option><option>お座敷</option></select>
-                <button id="regBtn" class="btn-submit" onclick="send()">受付確定</button>
+    <div id="userView" class="view active">
+        <div id="formArea" class="card">
+            <h3>新規受付</h3>
+            <input type="text" id="nameInput" placeholder="お名前（任意）" style="width:90%; padding:10px; margin-bottom:10px;">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <button class="btn" onclick="adjustNum(-1)">ー</button>
+                <div id="adultNum" style="font-size:2em; width:50px; text-align:center;">2</div>
+                <button class="btn" onclick="adjustNum(1)">＋</button>
             </div>
-
-            <div id="ticketArea" class="form-box" style="display:none; border: 2px solid #8b0000;">
-                <h3 style="color:#27ae60; margin:0;">受付完了</h3>
-                <div id="num" class="complete-id">--</div>
-                <div style="background:#fff3f3; padding:10px; border-radius:8px; font-size:0.85em; color:#d35400; text-align:center; font-weight:bold;">
-                    ⚠️ 番号をメモまたは撮影してください
-                </div>
-                <button class="btn-submit" onclick="closeTicket()" style="background:#666; margin-top:15px;">閉じる</button>
-            </div>
+            <button class="btn btn-reg" onclick="register()">受付確定</button>
         </div>
-        <div class="right-panel">
-            <h3 style="margin:0 0 10px; color:#8b0000; text-align:center;">お待ち状況（<span id="count">0</span>組待ち）</h3>
-            <div id="queueList" class="grid-container"></div>
+
+        <div id="ticketArea" class="card" style="display:none; text-align:center;">
+            <h2 style="color:#27ae60;">✅ 受付完了</h2>
+            <div id="displayId" style="font-size:5em; font-weight:bold; color:#8b0000;">--</div>
+            <div id="waitMsg" style="color:#e67e22; font-weight:bold; margin:15px 0;"></div>
+            
+            <a id="printBtn" href="#" class="btn btn-print">🖨️ レシートを発行 (mC-Print3)</a>
+            
+            <button class="btn" onclick="location.reload()" style="background:#666; color:white;">閉じる</button>
+        </div>
+
+        <div class="card">
+            <h3>現在の待ち状況</h3>
+            <div id="queueList"></div>
+        </div>
+    </div>
+
+    <div id="adminView" class="view">
+        <div class="card">
+            <h3>📊 本日の統計</h3>
+            <div id="statPanel">待ち：0組 / 完了：0組</div>
+        </div>
+        <div class="card">
+            <h3>📋 待ちリスト</h3>
+            <div id="adminQueueList"></div>
         </div>
     </div>
 
     <script>
         const socket = io();
-        const type = new URLSearchParams(window.location.search).get('type') || 'web';
-        
-        let nums = { adults: 2, children: 0, infants: 0 };
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode') || 'user'; // ?mode=admin で管理画面へ [cite: 63]
+        let adults = 2;
 
-        function updateDisplays() {
-            document.getElementById('display-adults').innerText = nums.adults;
-            document.getElementById('display-children').innerText = nums.children;
-            document.getElementById('display-infants').innerText = nums.infants;
+        // 画面切り替え [cite: 16]
+        if (mode === 'admin') {
+            document.getElementById('userView').classList.remove('active');
+            document.getElementById('adminView').classList.add('active');
+            document.getElementById('mainTitle').innerText = "🏮 管理画面";
         }
 
-        function changeNum(key, step) {
-            nums[key] = Math.max(0, nums[key] + step);
-            if(key === 'adults' && nums.adults < 1) nums.adults = 1; // 大人は最低1人
-            updateDisplays();
+        function adjustNum(step) {
+            adults = Math.max(1, adults + step);
+            document.getElementById('adultNum').innerText = adults;
         }
 
-        function setNum(key, val) {
-            nums[key] = val;
-            updateDisplays();
-        }
-
-        socket.on('update', d => {
-            document.getElementById('count').innerText = d.queue.length;
-            const list = document.getElementById('queueList');
-            list.innerHTML = d.queue.map(g => `<div class="queue-card"><span class="queue-id">${g.displayId}</span><div class="queue-info">${g.adults}/${g.children}/${g.infants}<br>${g.pref}</div></div>`).join('');
-        });
-
-        socket.on('statusChange', s => { 
-            const b = document.getElementById('regBtn'); b.disabled = !s; b.innerText = s ? "受付確定" : "受付停止中";
-        });
-
-        function send() {
-            socket.emit('register', { type, ...nums, pref: document.getElementById('pref').value });
-        }
-
-        function closeTicket() {
-            document.getElementById('ticketArea').style.display='none';
-            document.getElementById('formArea').style.display='block';
-            nums = { adults: 2, children: 0, infants: 0 };
-            updateDisplays();
+        function register() {
+            const name = document.getElementById('nameInput').value;
+            const type = urlParams.get('mode') === 'shop' ? 'shop' : 'web'; // ?mode=shop で店舗受付 [cite: 17, 62]
+            socket.emit('register', { type, adults, name, pref: 'どこでも' });
         }
 
         socket.on('registered', g => {
-            document.getElementById('formArea').style.display='none';
-            document.getElementById('ticketArea').style.display='block';
-            document.getElementById('num').innerText = g.displayId;
+            document.getElementById('formArea').style.display = 'none';
+            document.getElementById('ticketArea').style.display = 'block';
+            document.getElementById('displayId').innerText = g.displayId;
+
+            // 【mC-Print3 解決策】URLエンコードとコールバックパラメータ 
+            const myUrl = window.location.href;
+            const text = `松乃木飯店%0A----------------%0A番号：${g.displayId}%0Aお名前：${g.name || 'なし'}%0A人数：${g.adults}名%0A----------------`;
+            document.getElementById('printBtn').href = `starpassprnt://v1/print/nopreview?text=${text}&back=${encodeURIComponent(myUrl)}`;
+        });
+
+        socket.on('update', d => {
+            const list = document.getElementById('queueList');
+            const adminList = document.getElementById('adminQueueList');
+            list.innerHTML = ""; adminList.innerHTML = "";
+
+            d.queue.forEach((g, index) => {
+                // 待ち時間計算（1.2倍のバッファ）[cite: 97, 320]
+                const wait = Math.max(10, Math.ceil((index * (d.stats.averageWaitTime || 10) * 1.2) / 5) * 5);
+                const itemHtml = `<div class="queue-item ${g.called ? 'called' : ''}">
+                    <span>${g.displayId} (${g.adults}名)</span>
+                    <span>${g.called ? '📢 呼出中' : '待ち'}</span>
+                </div>`;
+                list.innerHTML += itemHtml;
+
+                // 管理画面用リスト [cite: 299-302]
+                if (mode === 'admin') {
+                    adminList.innerHTML += `<div class="queue-item">
+                        <span>${g.displayId} ${g.name || ''}</span>
+                        <div>
+                            <button onclick="call('${g.displayId}')">📢 呼出</button>
+                            <button onclick="done('${g.displayId}')">✓ 完了</button>
+                        </div>
+                    </div>`;
+                }
+            });
+            document.getElementById('statPanel').innerText = `待ち：${d.queue.length}組 / 完了：${d.stats.completedToday}組 / 平均：${d.stats.averageWaitTime}分`;
+        });
+
+        function call(id) { socket.emit('callGuest', { displayId: id }); }
+        function done(id) { if(confirm('案内完了にしますか？')) socket.emit('updateStatus', { displayId: id, status: 'completed' }); }
+
+        // 呼び出し音 [cite: 354, 477]
+        socket.on('guestCalled', data => {
+            if (mode !== 'admin') {
+                const audio = new AudioContext();
+                const osc = audio.createOscillator();
+                osc.connect(audio.destination);
+                osc.start(); osc.stop(audio.currentTime + 0.5);
+                alert("お呼び出しです！店内へお越しください。");
+            }
         });
     </script>
 </body>

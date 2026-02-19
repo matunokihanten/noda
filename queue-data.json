@@ -1,11 +1,36 @@
 {
-  "queue": [],
-  "nextNumber": 42,
+  "queue": [
+    {
+      "displayId": "W-1",
+      "type": "web",
+      "adults": 2,
+      "children": 0,
+      "infants": 0,
+      "pref": "どこでも",
+      "name": "",
+      "status": "waiting",
+      "timestamp": 1771537887797,
+      "time": "6:51:27"
+    },
+    {
+      "displayId": "W-2",
+      "type": "web",
+      "adults": 2,
+      "children": 0,
+      "infants": 0,
+      "pref": "どこでも",
+      "name": "",
+      "status": "waiting",
+      "timestamp": 1771538693478,
+      "time": "7:04:53"
+    }
+  ],
+  "nextNumber": 3,
   "isAccepting": true,
   "stats": {
-    "totalToday": 0,
+    "totalToday": 2,
     "completedToday": 0,
     "averageWaitTime": 0
   },
-  "lastUpdated": "2026-02-14T09:38:11.563Z"
+  "lastResetDate": "2026/2/20"
 }
