@@ -2,33 +2,140 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>管理画面 - 松乃木飯店</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松乃木飯店 - 店舗タブレット</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #e8f5e9; display: flex; gap: 20px; }
+        .panel { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2e7d32; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, button { width: 100%; padding: 15px; box-sizing: border-box; font-size: 18px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #4caf50; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:disabled { background: #ccc; }
+        .queue-list { list-style: none; padding: 0; }
+        .queue-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .btn-arrive { background: #2196f3; width: auto; padding: 10px 20px; }
+        .arrived-text { color: #e91e63; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <h1>🔧 順番管理パネル</h1>
-    <table border="1" style="width:100%">
-        <thead><tr><th>番号</th><th>人数</th><th>操作</th></tr></thead>
-        <tbody id="queue-list"></tbody>
-    </table>
+    <div class="panel">
+        <h1>ご来店受付</h1>
+        <div id="errorArea" style="color:red; text-align:center; font-weight:bold;"></div>
+        <div class="form-group">
+            <label>お名前（任意）</label>
+            <input type="text" id="guestName" placeholder="例: 山田">
+        </div>
+        <div class="form-group">
+            <label>大人（名）</label>
+            <input type="number" id="adults" min="1" value="2">
+        </div>
+        <div class="form-group">
+            <label>子供（名）</label>
+            <input type="number" id="children" min="0" value="0">
+        </div>
+        <div class="form-group">
+            <label>幼児（名）</label>
+            <input type="number" id="infants" min="0" value="0">
+        </div>
+        <div class="form-group">
+            <label>希望座席</label>
+            <select id="pref">
+                <option value="どこでも">どこでも</option>
+                <option value="カウンター">カウンター</option>
+                <option value="テーブル">テーブル</option>
+                <option value="お座敷">お座敷</option>
+            </select>
+        </div>
+        <button id="submitBtn" onclick="register()">発券する</button>
+    </div>
+
+    <div class="panel">
+        <h2>お待ちのお客様</h2>
+        <ul class="queue-list" id="queueList"></ul>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        socket.on('update', (data) => {
-            const list = document.getElementById('queue-list');
+        let isAccepting = true;
+
+        function playCallSound() {
+            // 店舗用呼び出し音 (ビープ音を生成)
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 1);
+        }
+
+        function renderQueue(queue) {
+            const list = document.getElementById('queueList');
             list.innerHTML = '';
-            data.queue.forEach(g => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${g.displayId}</td>
-                    <td>大人${g.adults} / 子${g.children}</td>
-                    <td><button onclick="done('${g.displayId}')">案内完了</button></td>
+            queue.forEach(g => {
+                const li = document.createElement('li');
+                li.className = 'queue-item';
+                let actionHtml = '';
+                if (g.arrived) {
+                    actionHtml = `<span class="arrived-text">来店済</span>`;
+                } else {
+                    actionHtml = `<button class="btn-arrive" onclick="markArrived('${g.displayId}')">到着確認</button>`;
+                }
+                li.innerHTML = `
+                    <div>
+                        <strong>${g.displayId}</strong> ${g.name ? g.name + '様' : ''} 
+                        (${g.adults}名/子${g.children}/幼${g.infants}) [${g.type === 'shop' ? '店舗' : 'ネット'}]
+                    </div>
+                    ${actionHtml}
                 `;
-                list.appendChild(tr);
+                list.appendChild(li);
             });
+        }
+
+        socket.on('init', (data) => {
+            isAccepting = data.isAccepting;
+            document.getElementById('submitBtn').disabled = !isAccepting;
+            document.getElementById('errorArea').innerText = isAccepting ? "" : "現在受付を停止しています";
+            renderQueue(data.queue);
         });
-        function done(id) { socket.emit('updateStatus', { displayId: id, status: 'completed' }); }
+
+        socket.on('update', (data) => renderQueue(data.queue));
+        socket.on('statusChange', (data) => {
+            isAccepting = data.isAccepting;
+            document.getElementById('submitBtn').disabled = !isAccepting;
+            document.getElementById('errorArea').innerText = isAccepting ? "" : "現在受付を停止しています";
+        });
+
+        socket.on('guestCalled', (data) => {
+            playCallSound();
+        });
+
+        function register() {
+            if (!isAccepting) return alert('現在受付を停止しています');
+            const data = {
+                type: 'shop',
+                name: document.getElementById('guestName').value,
+                adults: parseInt(document.getElementById('adults').value),
+                children: parseInt(document.getElementById('children').value),
+                infants: parseInt(document.getElementById('infants').value),
+                pref: document.getElementById('pref').value
+            };
+            socket.emit('register', data);
+            
+            // フォームリセット
+            document.getElementById('guestName').value = '';
+            document.getElementById('adults').value = 2;
+            document.getElementById('children').value = 0;
+            document.getElementById('infants').value = 0;
+            document.getElementById('pref').value = 'どこでも';
+        }
+
+        function markArrived(displayId) {
+            socket.emit('markArrived', { displayId });
+        }
     </script>
 </body>
 </html>
