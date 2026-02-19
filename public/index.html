@@ -3,39 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>松乃木飯店 - ネット受付</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <title>松乃木飯店 - ネット順番受付</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f7f7f7; }
+        .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; font-size: 24px; }
+        .status-board { background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .status-board h2 { margin: 0; font-size: 20px; color: #1565c0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, button { width: 100%; padding: 10px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #ff9800; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:disabled { background: #ccc; }
+        #myTicket { display: none; background: #fff3e0; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px; border: 2px solid #ffb74d; }
+        .ticket-number { font-size: 32px; font-weight: bold; color: #e65100; margin: 10px 0; }
+        .alert { color: red; font-weight: bold; text-align: center; }
+    </style>
 </head>
 <body>
-    <h1>🍜 松乃木飯店 ネット受付</h1>
-    <div id="form-area">
-        <label>大人</label><input type="number" id="adults" value="1" min="1">
-        <label>子供</label><input type="number" id="children" value="0" min="0">
-        <button id="btn-reg">順番待ちを予約する</button>
-    </div>
-    <div id="result-area" style="display:none;">
-        <h2>受付完了しました！</h2>
-        <p>あなたの番号: <strong id="my-id" style="font-size:2em;"></strong></p>
-        <p>画面を閉じずにお待ちください。</p>
+    <div class="container">
+        <h1>松乃木飯店 順番受付</h1>
+        
+        <div class="status-board">
+            <h2>現在 <span id="queueCount">0</span> 組待ち</h2>
+            <p id="waitTimeArea" style="display:none;">ご案内までの目安: 約 <strong id="estWaitTime">0</strong> 分</p>
+        </div>
+
+        <div id="errorArea" class="alert"></div>
+
+        <div id="receptionForm">
+            <div class="form-group">
+                <label>お名前（任意）</label>
+                <input type="text" id="guestName" placeholder="例: 山田">
+            </div>
+            <div class="form-group">
+                <label>大人（名）</label>
+                <input type="number" id="adults" min="1" value="2">
+            </div>
+            <div class="form-group">
+                <label>子供（名）</label>
+                <input type="number" id="children" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>幼児（名）</label>
+                <input type="number" id="infants" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>希望座席</label>
+                <select id="pref">
+                    <option value="どこでも">どこでも</option>
+                    <option value="カウンター">カウンター</option>
+                    <option value="テーブル">テーブル</option>
+                    <option value="お座敷">お座敷</option>
+                </select>
+            </div>
+            <button id="submitBtn" onclick="register()">順番待ちに並ぶ</button>
+        </div>
+
+        <div id="myTicket">
+            <h3>あなたの受付番号</h3>
+            <div class="ticket-number" id="myDisplayId">-</div>
+            <p>順番が近づきましたらお呼び出しいたします。</p>
+            <p id="myWaitTimeArea" style="display:none;">待ち時間目安: 約 <strong id="myEstWait">0</strong> 分</p>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        document.getElementById('btn-reg').onclick = () => {
+        let myTicketData = JSON.parse(localStorage.getItem('matunoki_ticket')) || null;
+        let isAccepting = true;
+        let waitTimeEnabled = true;
+
+        function updateUI() {
+            if (myTicketData) {
+                document.getElementById('receptionForm').style.display = 'none';
+                document.getElementById('myTicket').style.display = 'block';
+                document.getElementById('myDisplayId').innerText = myTicketData.displayId;
+            } else {
+                document.getElementById('receptionForm').style.display = 'block';
+                document.getElementById('myTicket').style.display = 'none';
+            }
+            document.getElementById('submitBtn').disabled = !isAccepting;
+            document.getElementById('errorArea').innerText = isAccepting ? "" : "現在受付を停止しています";
+        }
+
+        socket.on('init', (data) => {
+            isAccepting = data.isAccepting;
+            waitTimeEnabled = data.waitTimeDisplayEnabled;
+            document.getElementById('queueCount').innerText = data.queue.length;
+            if (waitTimeEnabled && data.queue.length > 0) {
+                document.getElementById('waitTimeArea').style.display = 'block';
+                document.getElementById('estWaitTime').innerText = data.queue[data.queue.length - 1].estimatedWait;
+            } else {
+                document.getElementById('waitTimeArea').style.display = 'none';
+            }
+            updateUI();
+        });
+
+        socket.on('update', (data) => {
+            document.getElementById('queueCount').innerText = data.queue.length;
+            if (myTicketData) {
+                const me = data.queue.find(g => g.displayId === myTicketData.displayId);
+                if (!me) {
+                    // 完了または削除された
+                    localStorage.removeItem('matunoki_ticket');
+                    myTicketData = null;
+                    updateUI();
+                } else if (waitTimeEnabled && me.estimatedWait !== null) {
+                    document.getElementById('myWaitTimeArea').style.display = 'block';
+                    document.getElementById('myEstWait').innerText = me.estimatedWait;
+                }
+            }
+        });
+
+        socket.on('statusChange', (data) => {
+            isAccepting = data.isAccepting;
+            updateUI();
+        });
+
+        socket.on('registered', (guest) => {
+            myTicketData = guest;
+            localStorage.setItem('matunoki_ticket', JSON.stringify(guest));
+            updateUI();
+        });
+
+        socket.on('guestCalled', (data) => {
+            if (myTicketData && data.displayId === myTicketData.displayId) {
+                alert(`お客様の順番になりました！\n受付番号: ${data.displayId}`);
+                if (navigator.vibrate) navigator.vibrate([1000, 500, 1000, 500, 1000]);
+            }
+        });
+
+        socket.on('dailyReset', () => {
+            localStorage.removeItem('matunoki_ticket');
+            myTicketData = null;
+            updateUI();
+        });
+
+        socket.on('queueNumberReset', () => {
+            localStorage.removeItem('matunoki_ticket');
+            myTicketData = null;
+            updateUI();
+        });
+
+        function register() {
+            if (!isAccepting) return alert('現在受付を停止しています');
             const data = {
                 type: 'web',
-                adults: document.getElementById('adults').value,
-                children: document.getElementById('children').value,
-                pref: '指定なし'
+                name: document.getElementById('guestName').value,
+                adults: parseInt(document.getElementById('adults').value),
+                children: parseInt(document.getElementById('children').value),
+                infants: parseInt(document.getElementById('infants').value),
+                pref: document.getElementById('pref').value
             };
             socket.emit('register', data);
-        };
-        socket.on('registered', (guest) => {
-            document.getElementById('form-area').style.display = 'none';
-            document.getElementById('result-area').style.display = 'block';
-            document.getElementById('my-id').innerText = guest.displayId;
-        });
+        }
+
+        updateUI();
     </script>
 </body>
 </html>
