@@ -26,6 +26,7 @@
         .btn-stop { background: #e74c3c; color: white; }
         .btn-start { background: #27ae60; color: white; }
         .btn-reset { background: #95a5a6; color: white; }
+        .btn-danger { background: #c0392b; color: white; }
         .btn-complete { background: #2ecc71; color: white; padding: 8px 14px; font-size: 0.85em; }
         .btn-call { background: #e67e22; color: white; padding: 8px 14px; font-size: 0.85em; }
         .btn-recall { background: #f39c12; color: white; padding: 8px 14px; font-size: 0.85em; }
@@ -39,10 +40,13 @@
         .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .controls label { font-weight: bold; margin-right: 10px; }
         
-        /* 音声読み上げ設定 */
-        .voice-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        .voice-control input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
-        .voice-control label { font-size: 1.05em; font-weight: 600; cursor: pointer; }
+        /* 設定コントロール */
+        .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .setting-control input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        .setting-control label { font-size: 1.05em; font-weight: 600; cursor: pointer; flex: 1; }
+        .setting-status { font-size: 0.9em; font-weight: bold; padding: 4px 12px; border-radius: 6px; }
+        .status-on { background: #27ae60; color: white; }
+        .status-off { background: #e74c3c; color: white; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         thead { background: #8b0000; color: white; }
@@ -55,6 +59,7 @@
         .no-data { text-align: center; padding: 30px; color: #999; font-style: italic; }
         
         .wait-time { color: #e67e22; font-weight: bold; font-size: 0.9em; }
+        .estimated-wait { color: #3498db; font-weight: bold; font-size: 0.9em; }
         .type-badge { padding: 4px 8px; border-radius: 5px; font-size: 0.85em; font-weight: bold; color: white; display: inline-block; }
         .type-web { background: #9b59b6; }
         .type-shop { background: #3498db; }
@@ -98,13 +103,29 @@
     </div>
 
     <div class="card">
-        <h2>📋 受付コントロール</h2>
+        <h2>⚙️ システム設定</h2>
         
-        <!-- 音声読み上げ設定 -->
-        <div class="voice-control">
+        <div class="setting-control">
             <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
             <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
+            <span class="setting-status status-off" id="voiceStatus">OFF</span>
         </div>
+        
+        <div class="setting-control">
+            <input type="checkbox" id="printerEnabled" onchange="togglePrinter()">
+            <label for="printerEnabled">🖨️ 店舗受付時に番号を印刷する</label>
+            <span class="setting-status status-on" id="printerStatus">ON</span>
+        </div>
+        
+        <div class="setting-control">
+            <input type="checkbox" id="waitTimeDisplayEnabled" onchange="toggleWaitTimeDisplay()">
+            <label for="waitTimeDisplayEnabled">⏱️ 待ち時間目安を表示する</label>
+            <span class="setting-status status-on" id="waitTimeDisplayStatus">ON</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📋 受付コントロール</h2>
         
         <div id="statusLabel" class="status-accepting">状態確認中...</div>
         <div class="controls">
@@ -114,6 +135,7 @@
             <button class="btn-stop" onclick="setAccept(false, 60)">60分停止</button>
             <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
             <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
+            <button class="btn-danger" onclick="resetQueueNumber()">🔄 番号を1にリセット</button>
         </div>
     </div>
 
@@ -127,6 +149,7 @@
                         <th>お名前</th>
                         <th>受付時刻</th>
                         <th>待ち時間</th>
+                        <th>目安</th>
                         <th>人数(大/子/幼)</th>
                         <th>座席希望</th>
                         <th>タイプ</th>
@@ -135,7 +158,7 @@
                     </tr>
                 </thead>
                 <tbody id="list">
-                    <tr><td colspan="9" class="no-data">待ち客はいません</td></tr>
+                    <tr><td colspan="10" class="no-data">待ち客はいません</td></tr>
                 </tbody>
             </table>
         </div>
@@ -144,6 +167,8 @@
     <script>
         const socket = io();
         let voiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
+        let printerEnabled = true;
+        let waitTimeDisplayEnabled = true;
         
         // 時計更新
         function updateClock() {
@@ -155,12 +180,61 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 音声読み上げ設定の復元
+        // 設定の復元
         document.getElementById('voiceEnabled').checked = voiceEnabled;
+        updateVoiceStatus();
+
+        function updateVoiceStatus() {
+            const status = document.getElementById('voiceStatus');
+            if (voiceEnabled) {
+                status.textContent = 'ON';
+                status.className = 'setting-status status-on';
+            } else {
+                status.textContent = 'OFF';
+                status.className = 'setting-status status-off';
+            }
+        }
+
+        function updatePrinterStatus() {
+            const checkbox = document.getElementById('printerEnabled');
+            const status = document.getElementById('printerStatus');
+            checkbox.checked = printerEnabled;
+            if (printerEnabled) {
+                status.textContent = 'ON';
+                status.className = 'setting-status status-on';
+            } else {
+                status.textContent = 'OFF';
+                status.className = 'setting-status status-off';
+            }
+        }
+
+        function updateWaitTimeDisplayStatus() {
+            const checkbox = document.getElementById('waitTimeDisplayEnabled');
+            const status = document.getElementById('waitTimeDisplayStatus');
+            checkbox.checked = waitTimeDisplayEnabled;
+            if (waitTimeDisplayEnabled) {
+                status.textContent = 'ON';
+                status.className = 'setting-status status-on';
+            } else {
+                status.textContent = 'OFF';
+                status.className = 'setting-status status-off';
+            }
+        }
 
         function toggleVoice() {
             voiceEnabled = document.getElementById('voiceEnabled').checked;
             localStorage.setItem('voiceEnabled', voiceEnabled);
+            updateVoiceStatus();
+        }
+
+        function togglePrinter() {
+            printerEnabled = document.getElementById('printerEnabled').checked;
+            socket.emit('setPrinterEnabled', { enabled: printerEnabled });
+        }
+
+        function toggleWaitTimeDisplay() {
+            waitTimeDisplayEnabled = document.getElementById('waitTimeDisplayEnabled').checked;
+            socket.emit('setWaitTimeDisplay', { enabled: waitTimeDisplayEnabled });
         }
 
         // 音声読み上げ機能
@@ -209,10 +283,11 @@
 
             const list = document.getElementById('list');
             if (d.queue.length === 0) {
-                list.innerHTML = '<tr><td colspan="9" class="no-data">待ち客はいません</td></tr>';
+                list.innerHTML = '<tr><td colspan="10" class="no-data">待ち客はいません</td></tr>';
             } else {
                 list.innerHTML = d.queue.map(g => {
                     const waitTime = getWaitTime(g.timestamp);
+                    const estimatedWait = g.estimatedWait ? `約${g.estimatedWait}分` : '-';
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
                     const nameDisplay = g.name || '-';
@@ -250,6 +325,7 @@
                             <td style="font-weight:600;">${nameDisplay}</td>
                             <td>${g.time}</td>
                             <td class="wait-time">${waitTime}</td>
+                            <td class="estimated-wait">${estimatedWait}</td>
                             <td>${g.adults}名 / ${g.children}名 / ${g.infants}名</td>
                             <td>${g.pref}</td>
                             <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
@@ -272,10 +348,24 @@
                 label.innerText = "⏸️ 現在：受付停止中";
                 label.className = "status-stopped";
             }
+            if (s.queue) {
+                updateUI({ queue: s.queue, stats: {} });
+            }
         });
 
         socket.on('init', d => {
             updateUI(d);
+            
+            // 設定を復元
+            if (d.printerEnabled !== undefined) {
+                printerEnabled = d.printerEnabled;
+                updatePrinterStatus();
+            }
+            if (d.waitTimeDisplayEnabled !== undefined) {
+                waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
+                updateWaitTimeDisplayStatus();
+            }
+            
             const label = document.getElementById('statusLabel');
             if (d.isAccepting) {
                 label.innerText = "✅ 現在：受付中";
@@ -287,6 +377,23 @@
         });
         
         socket.on('update', d => updateUI(d));
+
+        socket.on('printerStatusChanged', data => {
+            printerEnabled = data.printerEnabled;
+            updatePrinterStatus();
+        });
+
+        socket.on('waitTimeDisplayChanged', data => {
+            waitTimeDisplayEnabled = data.waitTimeDisplayEnabled;
+            updateWaitTimeDisplayStatus();
+            if (data.queue) {
+                updateUI({ queue: data.queue, stats: {} });
+            }
+        });
+
+        socket.on('queueNumberReset', data => {
+            alert(`✅ 受付番号を1にリセットしました。次の受付番号: ${data.nextNumber}`);
+        });
 
         socket.on('guestArrived', data => {
             playSound('info');
@@ -349,6 +456,12 @@
             }
         }
 
+        function resetQueueNumber() {
+            if (confirm('⚠️ 受付番号を1にリセットしますか？\n\n注意：待ち客がいる場合は実行できません。\nすべての案内が完了してから実行してください。')) {
+                socket.emit('resetQueueNumber');
+            }
+        }
+
         // サウンド再生
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -371,6 +484,10 @@
                 oscillator.stop(audioContext.currentTime + 0.15);
             }
         }
+
+        socket.on('error', err => {
+            alert('エラー: ' + err.message);
+        });
     </script>
 </body>
 </html>
