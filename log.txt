@@ -1,0 +1,160 @@
+[2026-02-20 05:37:39] Button: Job created.
+[2026-02-20 05:38:24] Printer: Data sent successfully!
+[2026-02-20 05:38:52] Button: Job created.
+[2026-02-20 05:39:28] Printer: Data sent successfully!
+[2026-02-20 05:43:44] Button: Job created.
+[2026-02-20 05:43:48] Printer: Data sent successfully!
+[2026-02-20 05:45:23] Button: Job created.
+[2026-02-20 05:45:27] Printer: Data sent successfully!
+[2026-02-20 05:48:00] Button: Job created.
+[2026-02-20 05:48:05] Printer: Data sent successfully!
+[2026-02-20 05:50:28] Button: Job created.
+[2026-02-20 05:50:32] Printer: Data sent successfully!
+[2026-02-20 05:51:48] Button: Job created.
+[2026-02-20 05:51:58] Printer: Data sent successfully!
+[2026-02-20 05:55:02] Button: Job created.
+[2026-02-20 05:55:25] Button: Job created.
+[2026-02-20 05:56:07] Button: Job created.
+[2026-02-20 05:56:39] Button: Job created.
+[2026-02-20 05:56:56] Printer: Data sent successfully!
+[2026-02-20 05:57:14] Button: Job created.
+[2026-02-20 05:58:10] Printer: Data sent successfully!
+[2026-02-20 05:58:29] Button: Job created.
+[2026-02-20 06:02:29] Button: Job created.
+[2026-02-20 06:02:47] Button: Job created.
+[2026-02-20 06:03:46] Printer: Downloading data...
+[2026-02-20 06:03:50] Printer: Print complete. Job cleared.
+[2026-02-20 06:03:51] Button: Job created.
+[2026-02-20 06:03:53] Printer: Print complete. Job cleared.
+[2026-02-20 06:04:08] Button: Job created.
+[2026-02-20 06:04:11] Printer: Print complete. Job cleared.
+[2026-02-20 06:27:39] Button: Job created.
+[2026-02-20 06:27:42] Printer: Downloading data...
+[2026-02-20 06:27:51] Printer: Print complete. Job cleared.
+[2026-02-20 06:28:57] Button: Job created.
+[2026-02-20 06:29:15] Printer: Downloading data...
+[2026-02-20 06:29:20] Printer: Print complete. Job cleared.
+[2026-02-20 09:13:10] Button: Job created.
+[2026-02-20 09:14:22] Button: Job created.
+[2026-02-20 09:14:44] Printer: Downloading data...
+[2026-02-20 09:15:23] Button: Job created.
+[2026-02-20 09:19:49] Printer: Downloading data...
+[2026-02-20 09:19:55] Printer: Print complete. Job cleared.
+[2026-02-20 10:21:43] Button: Job created.
+[2026-02-20 10:21:48] Printer: Downloading data...
+[2026-02-20 10:21:56] Printer: Print complete. Job cleared.
+[2026-02-20 11:17:22] Button: Job created (Size optimized).
+[2026-02-20 11:18:20] Printer: Data downloading...
+[2026-02-20 11:18:29] Printer: Print success. Job cleared.
+[2026-02-20 11:24:55] Button: Job created (UTF-8 and StarPRNT commands optimized).
+[2026-02-20 11:26:03] Button: Job created (UTF-8 and StarPRNT commands optimized).
+[2026-02-20 11:27:08] Printer: Data downloading...
+[2026-02-20 11:27:16] Printer: Print success. Job cleared.
+[2026-02-20 19:21:42] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:24:01] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:24:03] Printer: Downloading data...
+[2026-02-20 19:24:08] Printer: Print complete. Job cleared.
+[2026-02-20 19:25:32] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:25:36] Printer: Downloading data...
+[2026-02-20 19:27:51] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:28:32] Printer: Downloading data...
+[2026-02-20 19:28:52] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:42:45] Button: Job created.
+[2026-02-20 19:43:19] Button: Job created.
+[2026-02-20 19:43:50] Button: Job created.
+[2026-02-20 19:45:04] Printer: Downloading data...
+[2026-02-20 19:45:10] Printer: Print complete. Job cleared.
+[2026-02-20 19:45:14] Button: Job created.
+[2026-02-20 19:45:18] Printer: Print complete. Job cleared.
+[2026-02-20 19:45:48] Button: Job created.
+[2026-02-20 19:45:58] Printer: Print complete. Job cleared.
+[2026-02-20 19:46:59] Button: Job created.
+[2026-02-20 19:47:03] Printer: Downloading data...
+[2026-02-20 19:47:08] Printer: Print complete. Job cleared.
+[2026-02-20 19:52:00] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:52:04] Printer: Downloading data...
+[2026-02-20 19:52:12] Printer: Print complete. Job cleared.
+[2026-02-20 19:53:27] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:53:31] Printer: Downloading data...
+[2026-02-20 19:53:36] Printer: Print complete. Job cleared.
+[2026-02-20 19:55:40] Button: Job created (Large Text + Fast Print).
+[2026-02-20 19:55:44] Printer: Downloading data...
+[2026-02-20 19:55:52] Printer: Print complete. Job cleared.
+[2026-02-20 20:04:20] Button: Job created (Large Text + Fast Print).
+[2026-02-20 20:04:24] Printer: Downloading data...
+[2026-02-20 20:04:29] Printer: Print complete. Job cleared.
+[2026-02-20 20:05:27] Button: Job created (Large Text + Fast Print).
+[2026-02-20 20:05:40] Printer: Downloading data...
+[2026-02-20 20:05:45] Printer: Print complete. Job cleared.
+[2026-02-20 20:06:56] Button: Job created (Large Text + Fast Print).
+[2026-02-20 20:07:00] Printer: Downloading data...
+[2026-02-20 20:07:05] Printer: Print complete. Job cleared.
+[2026-02-20 20:15:00] ★Button: Job created.
+[2026-02-20 20:15:03] Printer: Downloading data...
+[2026-02-20 20:15:12] Printer: Print complete.
+[2026-02-20 20:16:00] ★Button: Job created.
+[2026-02-20 20:16:04] Printer: Downloading data...
+[2026-02-20 20:16:09] Printer: Print complete.
+[2026-02-20 20:16:42] ★Button: Job created.
+[2026-02-20 20:16:51] Printer: Print complete.
+[2026-02-20 20:17:44] ★Button: Job created.
+[2026-02-20 20:17:52] Printer: Downloading data...
+[2026-02-20 20:18:04] Printer: Print complete.
+[2026-02-20 20:19:25] ★Button: Job created.
+[2026-02-20 20:19:28] Printer: Downloading data...
+[2026-02-20 20:19:32] Printer: Print complete.
+[2026-02-20 20:19:40] ★Button: Job created.
+[2026-02-20 20:19:42] Printer: Print complete.
+[2026-02-20 20:21:35] ★Button: Job created.
+[2026-02-20 20:21:39] Printer: Downloading data...
+[2026-02-20 20:21:43] Printer: Print complete.
+[2026-02-20 20:22:46] ★Button: Job created.
+[2026-02-20 20:22:51] Printer: Downloading data...
+[2026-02-20 20:22:56] Printer: Print complete.
+[2026-02-20 20:23:57] ★Button: Job created.
+[2026-02-20 20:24:01] Printer: Downloading data...
+[2026-02-20 20:24:06] Printer: Print complete.
+[2026-02-20 20:27:22] ★Button: Job created.
+[2026-02-20 20:27:26] Printer: Downloading data...
+[2026-02-20 20:27:31] Printer: Print complete.
+[2026-02-20 20:28:36] ★Button: Job created.
+[2026-02-20 20:28:39] Printer: Downloading data...
+[2026-02-20 20:28:44] Printer: Print complete.
+[2026-02-20 20:29:42] ★Button: Job created.
+[2026-02-20 20:29:45] Printer: Downloading data...
+[2026-02-20 20:29:49] Printer: Print complete.
+[2026-02-20 20:34:59] ★Button: Job created.
+[2026-02-20 20:35:03] Printer: Downloading data...
+[2026-02-20 20:36:02] ★Button: Job created.
+[2026-02-20 20:36:48] Printer: Print complete.
+[2026-02-20 20:39:18] Button: Job created.
+[2026-02-20 20:39:21] Printer: Downloading data...
+[2026-02-20 20:39:26] Printer: Print complete.
+[2026-02-20 20:41:09] Button: Job created.
+[2026-02-20 20:41:13] Printer: Downloading data...
+[2026-02-20 20:41:21] Printer: Print complete.
+[2026-02-20 20:42:26] Button: Job created.
+[2026-02-20 20:42:40] Printer: Downloading data...
+[2026-02-20 20:42:45] Printer: Print complete.
+[2026-02-20 20:44:30] Button: Job created.
+[2026-02-20 20:44:35] Printer: Downloading data...
+[2026-02-20 20:44:39] Printer: Print complete.
+[2026-02-20 20:45:46] Button: Job created.
+[2026-02-20 20:45:50] Printer: Downloading data...
+[2026-02-20 20:45:55] Printer: Print complete.
+[2026-02-20 20:59:19] ★Button: Job created. Ticket=W-101
+[2026-02-20 20:59:22] Printer: Downloading data...
+[2026-02-20 20:59:30] Printer: Print complete.
+[2026-02-20 21:00:54] ★Button: Job created. Ticket=W-102
+[2026-02-20 21:00:57] Printer: Downloading data...
+[2026-02-20 21:01:02] Printer: Print complete.
+[2026-02-20 21:02:15] ★Button: Job created. Ticket=W-103
+[2026-02-20 21:02:19] Printer: Downloading data...
+[2026-02-20 21:02:24] Printer: Print complete.
+[2026-02-20 21:03:18] ★Button: Job created. Ticket=W-104
+[2026-02-20 21:03:22] Printer: Downloading data...
+[2026-02-20 21:03:27] Printer: Print complete.
+[2026-02-20 21:04:46] ★Button: Job created. Ticket=W-105
+[2026-02-20 21:04:50] Printer: Downloading data...
+[2026-02-20 21:04:55] Printer: Print complete.
+[2026-02-20 21:28:51] ★Button: Job created. Ticket=W-106

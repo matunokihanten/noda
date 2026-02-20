@@ -9,8 +9,8 @@
       "pref": "どこでも",
       "name": "",
       "status": "waiting",
-      "timestamp": 1771537887797,
-      "time": "6:51:27"
+      "timestamp": 1771414469259,
+      "time": "20:34:29"
     },
     {
       "displayId": "W-2",
@@ -21,8 +21,8 @@
       "pref": "どこでも",
       "name": "",
       "status": "waiting",
-      "timestamp": 1771538693478,
-      "time": "7:04:53"
+      "timestamp": 1771414753381,
+      "time": "20:39:13"
     }
   ],
   "nextNumber": 3,
@@ -32,5 +32,5 @@
     "completedToday": 0,
     "averageWaitTime": 0
   },
-  "lastResetDate": "2026/2/20"
+  "lastResetDate": "2026/2/18"
 }

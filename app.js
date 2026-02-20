@@ -4,7 +4,8 @@ const { Server } = require('socket.io');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
-const iconv = require('iconv-lite'); // 文字化け対策用に追加
+const net = require('net');
+const iconv = require('iconv-lite'); // ★追加: 文字化け対策（SJIS変換用）
 
 const app = express();
 const server = http.createServer(app);
@@ -14,9 +15,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten.yoyaku@gmail.com';
-const GMAIL_USER = process.env.GMAIL_USER || 'matunokihanten.yoyaku@gmail.com';
+const GMAIL_USER = process.env.GMAIL_USER || 'matunokihanten.yoyaku@gmail.com'; 
 const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS || 'gphm kodc uzbp dcmh'; 
 const DATA_FILE = path.join(__dirname, 'queue-data.json');
+
+// プリンター設定
+const PRINTER_IP = process.env.PRINTER_IP || '192.168.0.100';
+const PRINTER_PORT = process.env.PRINTER_PORT || 9100;
 
 let queue = [];
 let nextNumber = 1;
@@ -32,8 +37,10 @@ let lastResetDate = null; // 最後のリセット日
 let printerEnabled = true; // プリンター印刷有効/無効
 let waitTimeDisplayEnabled = true; // 待ち時間表示有効/無効
 
-// --- 🖨️ CloudPRNT 印刷ジョブ管理 ---
-let printJobs = []; // プリンターが取りに来るためのジョブ待ち行列
+// CloudPRNT用の印刷ジョブキュー
+let printJobQueue = [];
+const PRINT_JOB_FILE = path.join(__dirname, 'print_job.bin');
+const PRINT_LOG_FILE = path.join(__dirname, 'print_log.txt');
 
 // 今日の日付を取得（YYYY-MM-DD形式）
 function getTodayDate() {
@@ -143,6 +150,7 @@ const getJSTime = () => new Date().toLocaleTimeString('ja-JP', {
     minute: '2-digit',
     second: '2-digit'
 });
+
 const getFullDateTime = () => new Date().toLocaleString('ja-JP', {
     timeZone: 'Asia/Tokyo',
     year: 'numeric',
@@ -166,7 +174,17 @@ try {
     console.error('❌ メール設定エラー:', error.message);
 }
 
-// プリンター印刷関数 (CloudPRNTのジョブキューに追加)
+// ログ記録関数
+function writePrintLog(msg) {
+    try {
+        const timestamp = new Date().toISOString();
+        fs.appendFileSync(PRINT_LOG_FILE, `[${timestamp}] ${msg}\n`);
+    } catch (error) {
+        console.error('❌ ログ記録エラー:', error.message);
+    }
+}
+
+// CloudPRNT用プリンター印刷関数 (プロ仕様に修正済み)
 function printTicket(guest) {
     if (!printerEnabled) {
         console.log('🖨️ プリンター印刷: 無効');
@@ -174,119 +192,82 @@ function printTicket(guest) {
     }
     
     try {
-        // ESC/POS コマンド
-        const ESC = '\x1B';
-        const GS = '\x1D';
+        // 1. 各種パーツのバイナリバッファを作成
+        const initCmd = Buffer.from([0x1b, 0x40]); // 初期化
         
-        let text = '';
+        // ヘッダー（SJIS変換）
+        const headerText = "      松乃木飯店\n--------------------------\n受付番号：\n";
+        const headerBuf = iconv.encode(headerText, 'Shift_JIS');
         
-        // 初期化
-        text += ESC + '@';
+        // 文字拡大コマンド
+        const expandCmd = Buffer.from([0x1b, 0x69, 0x01, 0x01]);
         
-        // 中央揃え
-        text += ESC + 'a' + String.fromCharCode(1);
+        // 番号テキスト（SJIS変換）
+        const ticketText = guest.displayId + "\n";
+        const ticketBuf = iconv.encode(ticketText, 'Shift_JIS');
         
-        // 店名（太字・大きい文字）
-        text += GS + '!' + String.fromCharCode(0x11); // 2倍幅・2倍高さ
-        text += '松乃木飯店\n\n';
+        // 文字拡大解除コマンド
+        const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]);
         
-        // リセット
-        text += GS + '!' + String.fromCharCode(0);
-        
-        // 受付番号（特大）※数字は大きく印刷
-        text += GS + '!' + String.fromCharCode(0x33); // 4倍幅・4倍高さ
-        text += guest.displayId + '\n\n';
-        text += GS + '!' + String.fromCharCode(0);
-        
-        // 名前（あれば）
+        // フッター・詳細情報（SJIS変換）
+        let footerStr = `日時：${guest.fullDateTime}\n`;
         if (guest.name) {
-            text += GS + '!' + String.fromCharCode(0x11);
-            text += guest.name + '様\n\n';
-            text += GS + '!' + String.fromCharCode(0);
+            footerStr += `お名前：${guest.name}様\n`;
         }
+        footerStr += `人数：大人${guest.adults}名 子供${guest.children}名 幼児${guest.infants}名\n`;
+        footerStr += `座席：${guest.pref}\n`;
         
-        // 詳細情報
-        text += '--------------------------------\n';
-        text += `大人: ${guest.adults}名\n`;
-        text += `子供: ${guest.children}名\n`;
-        text += `幼児: ${guest.infants}名\n`;
-        text += `座席: ${guest.pref}\n`;
-        text += `受付: ${guest.time}\n`;
-        text += '--------------------------------\n\n';
-        
-        // 待ち時間目安（有効な場合）
+        // 待ち時間目安
         if (waitTimeDisplayEnabled) {
             const estimatedWait = calculateEstimatedWait(queue.indexOf(guest));
             if (estimatedWait > 0) {
-                text += `待ち時間目安: 約${estimatedWait}分\n`;
-                text += '※混雑状況により前後します\n\n';
+                footerStr += `目安：約${estimatedWait}分待ち\n`;
+                footerStr += `※混雑状況により前後します\n`;
             }
         }
         
-        // 注意事項
-        text += 'この番号を保管してください\n';
-        text += '順番が近づきましたら\n';
-        text += 'お呼び出しいたします\n\n';
+        footerStr += "--------------------------\nこの番号を保管してください\n順番が近づきましたら\nお呼び出しいたします\n\n\n\n";
+        const footerBuf = iconv.encode(footerStr, 'Shift_JIS');
         
-        // 紙送り＆フルカット
-        text += ESC + 'd' + String.fromCharCode(2); // 2行紙送り
-        text += GS + 'V' + String.fromCharCode(66) + String.fromCharCode(0); // フルカット
+        // オートカットコマンド
+        const cutCmd = Buffer.from([0x1b, 0x64, 0x02]);
         
-        // 【文字化け対策】Shift_JISにエンコード
-        const buffer = iconv.encode(text, 'SJIS');
+        // 2. すべてのデータを結合
+        const printData = Buffer.concat([
+            initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd
+        ]);
         
-        // 印刷ジョブをキューに追加（プリンターが取りに来るのを待つ）
-        printJobs.push(buffer);
-        console.log(`🖨️ 印刷ジョブを登録しました: ${guest.displayId}`);
+        // 3. バイナリデータとしてファイルに保存
+        fs.writeFileSync(PRINT_JOB_FILE, printData);
+        writePrintLog(`印刷ジョブ作成: ${guest.displayId} ${guest.name ? `(${guest.name})` : ''}`);
+        console.log(`🖨️ CloudPRNT印刷ジョブ作成: ${guest.displayId}`);
         
     } catch (error) {
         console.error('❌ 印刷処理エラー:', error.message);
+        writePrintLog(`エラー: ${error.message}`);
     }
 }
 
 // 待ち時間目安計算
 function calculateEstimatedWait(guestIndex) {
+    // 自分の前に何組いるか
     const beforeCount = guestIndex;
-    if (beforeCount <= 0) return 0; // 先頭なら0
+    
+    if (beforeCount <= 0) {
+        return 0; // 先頭なら0
+    }
+    
+    // 1組あたりの平均待ち時間（最低5分とする）
     const unitTime = Math.max(stats.averageWaitTime || 5, 5);
+    
+    // 前に待っている組数 × 単位時間 × 安全係数(1.2)
     let estimated = beforeCount * unitTime * 1.2;
-    return Math.ceil(estimated / 5) * 5; // 5分単位で切り上げ
+    
+    // 5分単位で切り上げ（例: 12分 → 15分）
+    return Math.ceil(estimated / 5) * 5;
 }
 
-// --- 🌐 CloudPRNT ルーティング ---
-
-// 1. プリンターが「仕事ある？」と聞きに来た時
-app.post('/cloudprnt', (req, res) => {
-    const hasJob = printJobs.length > 0;
-    res.json({
-        jobReady: hasJob,
-        mediaTypes: ["application/vnd.star.starprnt"]
-    });
-});
-
-// 2. プリンターが「データちょうだい」と来た時
-app.get('/cloudprnt', (req, res) => {
-    if (printJobs.length > 0) {
-        const jobBuffer = printJobs[0];
-        res.setHeader('Content-Type', 'application/vnd.star.starprnt');
-        res.setHeader('Content-Length', jobBuffer.length); // 即座に印刷させるための魔法
-        res.send(jobBuffer);
-        console.log('🖨️ プリンターへデータを送信しました');
-    } else {
-        res.status(204).send();
-    }
-});
-
-// 3. プリンターが「印刷終わったよ！」と報告してきた時
-app.delete('/cloudprnt', (req, res) => {
-    if (printJobs.length > 0) {
-        printJobs.shift(); // 完了したジョブを先頭から削除
-        console.log('✅ プリンターから印刷完了報告を受け取りました');
-    }
-    res.status(200).send();
-});
-
-// --- 既存ルーティング ---
+// ルーティング
 app.get('/shop', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'shop.html'));
 });
@@ -308,9 +289,55 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
+// CloudPRNT API: プリンターからの確認 (POST)
+app.post('/cloudprnt', (req, res) => {
+    const hasJob = fs.existsSync(PRINT_JOB_FILE);
+    writePrintLog(`プリンター接続: 確認 (ジョブあり=${hasJob ? 'はい' : 'いいえ'})`);
+    
+    res.json({
+        jobReady: hasJob,
+        mediaTypes: ['application/vnd.star.starprnt'] // ★修正: Star専用フォーマット
+    });
+});
+
+// CloudPRNT API: プリンターからのデータ取得 (GET)
+app.get('/cloudprnt', (req, res) => {
+    if (fs.existsSync(PRINT_JOB_FILE)) {
+        writePrintLog('プリンター: データ出力中...');
+        const content = fs.readFileSync(PRINT_JOB_FILE);
+        
+        // ★修正: 遅延対策として専用のヘッダーと長さを送信
+        res.set('Content-Type', 'application/vnd.star.starprnt');
+        res.set('Content-Length', content.length);
+        res.send(content);
+        console.log('✅ CloudPRNT: 印刷データ送信完了');
+    } else {
+        res.status(204).send();
+    }
+});
+
+// CloudPRNT API: 完了報告の受信 (DELETE) - ★追加: ループ対策
+app.delete('/cloudprnt', (req, res) => {
+    if (fs.existsSync(PRINT_JOB_FILE)) {
+        fs.unlinkSync(PRINT_JOB_FILE); // 印刷が終わったらファイルを削除
+    }
+    writePrintLog("プリンター: 印刷完了");
+    res.status(200).send();
+});
+
+// CloudPRNT API: ログファイルの参照
+app.get('/print_log.txt', (req, res) => {
+    if (fs.existsSync(PRINT_LOG_FILE)) {
+        res.sendFile(PRINT_LOG_FILE);
+    } else {
+        res.status(404).send('ログファイルが見つかりません');
+    }
+});
+
 io.on('connection', (socket) => {
     console.log('🔌 クライアント接続:', socket.id);
     
+    // 初期データ送信（待ち時間目安を含む）
     const queueWithEstimate = queue.map((g, index) => ({
         ...g,
         estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
@@ -337,9 +364,9 @@ io.on('connection', (socket) => {
                 displayId, 
                 ...data, 
                 status: 'waiting',
-                arrived: false,
-                called: false,
-                name: data.name || '',
+                arrived: false, // 到着フラグ
+                called: false,  // 呼び出しフラグ
+                name: data.name || '', // 名前（任意）
                 time: getJSTime(),
                 fullDateTime: getFullDateTime(),
                 timestamp
@@ -350,25 +377,29 @@ io.on('connection', (socket) => {
             
             saveData();
             
-            // プリンター印刷（ジョブ追加）
+            // プリンター印刷（店舗受付のみ）
             if (printerEnabled && data.type === 'shop') {
                 printTicket(newGuest);
             }
             
+            // 待ち時間目安を追加
             const queueWithEstimate = queue.map((g, index) => ({
                 ...g,
                 estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
             }));
+            
             io.emit('update', { queue: queueWithEstimate, stats });
             
+            // 登録したゲストの待ち時間目安を追加
             const guestWithEstimate = {
                 ...newGuest,
                 estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(queue.length - 1) : null
             };
             socket.emit('registered', guestWithEstimate);
-            
+
             console.log(`✅ 新規受付: ${displayId} ${newGuest.name ? `(${newGuest.name})` : ''} (大人${data.adults}/子${data.children}/幼${data.infants}) タイプ: ${data.type}`);
-            
+
+            // Web予約の場合はメール通知
             if (data.type === 'web' && transporter) {
                 const mailOptions = {
                     from: GMAIL_USER, 
@@ -376,6 +407,7 @@ io.on('connection', (socket) => {
                     subject: `【松乃木飯店】新規予約 ${displayId}`,
                     text: `予約通知\n\n番号：${displayId}\n${newGuest.name ? `お名前：${newGuest.name}\n` : ''}大人：${data.adults}名\n子供：${data.children}名\n幼児：${data.infants}名\n希望座席：${data.pref}\n受付時刻：${newGuest.fullDateTime}`
                 };
+                
                 transporter.sendMail(mailOptions).catch(err => {
                     console.error('❌ メール送信エラー:', err.message);
                 });
@@ -386,6 +418,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 到着通知
     socket.on('markArrived', ({ displayId }) => {
         try {
             const guest = queue.find(g => g.displayId === displayId);
@@ -407,6 +440,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 呼び出し機能
     socket.on('callGuest', ({ displayId }) => {
         try {
             const guest = queue.find(g => g.displayId === displayId);
@@ -420,7 +454,7 @@ io.on('connection', (socket) => {
                     estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
                 }));
                 io.emit('update', { queue: queueWithEstimate, stats });
-                
+                // 呼び出し通知を送信（音声読み上げ用のデータも含む）
                 io.emit('guestCalled', { 
                     displayId, 
                     type: guest.type,
@@ -436,6 +470,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 不在ボタン
     socket.on('markAbsent', ({ displayId }) => {
         try {
             const guest = queue.find(g => g.displayId === displayId);
@@ -443,10 +478,12 @@ io.on('connection', (socket) => {
                 guest.absent = true;
                 guest.absentTime = getJSTime();
                 
+                // 既存のタイマーをクリア
                 if (absentTimers[displayId]) {
                     clearTimeout(absentTimers[displayId]);
                 }
                 
+                // 10分後に自動キャンセル
                 absentTimers[displayId] = setTimeout(() => {
                     const stillExists = queue.find(g => g.displayId === displayId);
                     if (stillExists && stillExists.absent) {
@@ -462,9 +499,10 @@ io.on('connection', (socket) => {
                         io.emit('guestAutoCancelled', { displayId });
                         console.log(`⏰ 自動キャンセル（不在10分経過）: ${displayId}`);
                     }
-                }, 10 * 60 * 1000);
+                }, 10 * 60 * 1000); // 10分
                 
                 saveData();
+                
                 const queueWithEstimate = queue.map((g, index) => ({
                     ...g,
                     estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
@@ -477,6 +515,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 不在キャンセル
     socket.on('cancelAbsent', ({ displayId }) => {
         try {
             const guest = queue.find(g => g.displayId === displayId);
@@ -484,21 +523,23 @@ io.on('connection', (socket) => {
                 guest.absent = false;
                 delete guest.absentTime;
                 
+                // タイマーをクリア
                 if (absentTimers[displayId]) {
                     clearTimeout(absentTimers[displayId]);
                     delete absentTimers[displayId];
                 }
                 
                 saveData();
+                
                 const queueWithEstimate = queue.map((g, index) => ({
                     ...g,
                     estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
                 }));
                 io.emit('update', { queue: queueWithEstimate, stats });
-                console.log(`✅ 不在解除: ${displayId}`);
+                console.log(`✅ 不式解除: ${displayId}`);
             }
         } catch (error) {
-             console.error('❌ 不在解除エラー:', error.message);
+            console.error('❌ 不在解除エラー:', error.message);
         }
     });
 
@@ -508,14 +549,16 @@ io.on('connection', (socket) => {
                 const guest = queue.find(g => g.displayId === displayId);
                 if (guest && status === 'completed') {
                     stats.completedToday++;
-                    const waitTime = (Date.now() - guest.timestamp) / 1000 / 60;
+                    // 待ち時間を計算（平均待ち時間更新）
+                    const waitTime = (Date.now() - guest.timestamp) / 1000 / 60; // 分単位
                     stats.averageWaitTime = Math.round(
                         (stats.averageWaitTime * (stats.completedToday - 1) + waitTime) / stats.completedToday
                     );
                 }
                 
+                // タイマーをクリア
                 if (absentTimers[displayId]) {
-                     clearTimeout(absentTimers[displayId]);
+                    clearTimeout(absentTimers[displayId]);
                     delete absentTimers[displayId];
                 }
                 
@@ -534,6 +577,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 管理画面からの受付設定
     socket.on('setAcceptance', (data) => {
         try {
             isAccepting = data.status;
@@ -543,6 +587,7 @@ io.on('connection', (socket) => {
             }
 
             if (!isAccepting && data.duration > 0) {
+                // 指定時間（分）が経過したら自動で再開
                 stopTimer = setTimeout(() => {
                     isAccepting = true;
                     io.emit('statusChange', { isAccepting, message: '受付を自動再開しました' });
@@ -558,6 +603,7 @@ io.on('connection', (socket) => {
             }
             
             saveData();
+            
             const queueWithEstimate = queue.map((g, index) => ({
                 ...g,
                 estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
@@ -568,6 +614,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 統計リセット（管理画面用）
     socket.on('resetStats', () => {
         stats = {
             totalToday: 0,
@@ -575,6 +622,7 @@ io.on('connection', (socket) => {
             averageWaitTime: 0
         };
         saveData();
+        
         const queueWithEstimate = queue.map((g, index) => ({
             ...g,
             estimatedWait: waitTimeDisplayEnabled ? calculateEstimatedWait(index) : null
@@ -583,12 +631,15 @@ io.on('connection', (socket) => {
         console.log('📊 統計をリセットしました');
     });
 
+    // 手動番号リセット（管理画面用）
     socket.on('resetQueueNumber', () => {
         try {
+            // 待ちリストが空の場合のみリセット可能
             if (queue.length > 0) {
                 socket.emit('error', { message: '待ち客がいる間は番号リセットできません' });
                 return;
             }
+            
             nextNumber = 1;
             saveData();
             io.emit('queueNumberReset', { nextNumber });
@@ -598,6 +649,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // プリンター設定変更
     socket.on('setPrinterEnabled', (data) => {
         try {
             printerEnabled = data.enabled;
@@ -609,6 +661,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 待ち時間表示設定変更
     socket.on('setWaitTimeDisplay', (data) => {
         try {
             waitTimeDisplayEnabled = data.enabled;
@@ -623,7 +676,7 @@ io.on('connection', (socket) => {
                 waitTimeDisplayEnabled,
                 queue: queueWithEstimate
             });
-             console.log(`⏱️ 待ち時間表示: ${waitTimeDisplayEnabled ? '有効' : '無効'}`);
+            console.log(`⏱️ 待ち時間表示: ${waitTimeDisplayEnabled ? '有効' : '無効'}`);
         } catch (error) {
             console.error('❌ 待ち時間表示設定エラー:', error.message);
         }
@@ -634,7 +687,10 @@ io.on('connection', (socket) => {
     });
 });
 
+// 起動時にデータを読み込む
 loadData();
+
+// 定期的に日付変更をチェック
 checkDateChange();
 
 const PORT = process.env.PORT || 3000;
@@ -645,7 +701,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`👥 ネット受付: http://localhost:${PORT}`);
     console.log(`🏪 店舗受付: http://localhost:${PORT}/shop`);
     console.log(`🔧 管理画面: http://localhost:${PORT}/admin`);
-    console.log(`🖨️ プリンター通信: CloudPRNT待ち受け中 (エンドポイント: /cloudprnt)`);
+    console.log(`🖨️ プリンター: ${printerEnabled ? '有効' : '無効'} (${PRINTER_IP}:${PRINTER_PORT})`);
     console.log(`⏱️ 待ち時間表示: ${waitTimeDisplayEnabled ? '有効' : '無効'}`);
     console.log(`📊 待ち組数: ${queue.length}組`);
     console.log(`📈 本日累計: ${stats.totalToday}組`);
