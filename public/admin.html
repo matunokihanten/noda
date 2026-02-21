@@ -27,11 +27,6 @@
         .btn-start { background: #27ae60; color: white; }
         .btn-reset { background: #95a5a6; color: white; }
         .btn-danger { background: #c0392b; color: white; }
-        .btn-complete { background: #2ecc71; color: white; padding: 8px 14px; font-size: 0.85em; }
-        .btn-call { background: #e67e22; color: white; padding: 8px 14px; font-size: 0.85em; }
-        .btn-recall { background: #f39c12; color: white; padding: 8px 14px; font-size: 0.85em; }
-        .btn-absent { background: #e74c3c; color: white; padding: 8px 14px; font-size: 0.85em; }
-        .btn-cancel-absent { background: #3498db; color: white; padding: 8px 14px; font-size: 0.85em; }
         
         #statusLabel { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; padding: 10px; border-radius: 8px; text-align: center; }
         .status-accepting { background: #d4edda; color: #155724; }
@@ -48,33 +43,64 @@
         .status-on { background: #27ae60; color: white; }
         .status-off { background: #e74c3c; color: white; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        thead { background: #8b0000; color: white; }
-        th { padding: 12px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 10; }
-        td { border-bottom: 1px solid #eee; padding: 12px; text-align: center; }
-        tbody tr:hover { background: #f8f9fa; }
-        tbody tr.arrived { background: #d4edda; }
-        tbody tr.called { background: #fff3cd; font-weight: 600; }
-        tbody tr.absent { background: #f8d7da; opacity: 0.7; }
-        .no-data { text-align: center; padding: 30px; color: #999; font-style: italic; }
+        /* 新しいグリッドレイアウト（6列） */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
         
+        /* 画面サイズに応じた自動折り返し */
+        @media (max-width: 1400px) { .admin-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 1000px) { .admin-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 768px) { .admin-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .admin-grid { grid-template-columns: 1fr; } }
+
+        /* カードデザイン */
+        .admin-card {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .admin-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        .admin-card.arrived { border-color: #27ae60; background: #f0fdf4; }
+        .admin-card.called { border-color: #e67e22; background: #fffbeb; }
+        .admin-card.absent { border-color: #e74c3c; background: #fef2f2; opacity: 0.8; }
+        
+        .admin-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+        .admin-card-id { font-size: 1.5em; font-weight: bold; color: #8b0000; }
+        
+        .admin-card-body { font-size: 0.95em; color: #444; line-height: 1.5; flex: 1; }
+        .admin-card-body b { font-size: 1.1em; color: #222; }
+        
+        .admin-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 15px; }
+        .admin-card-actions button { padding: 8px 4px; font-size: 0.85em; border-radius: 6px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* ボタンカラー */
+        .btn-complete { background: #2ecc71; color: white; grid-column: 1 / -1; font-size: 1em !important; padding: 10px !important; }
+        .btn-call { background: #e67e22; color: white; }
+        .btn-recall { background: #f39c12; color: white; }
+        .btn-absent { background: #e74c3c; color: white; }
+        .btn-cancel-absent { background: #3498db; color: white; }
+        
+        .no-data { text-align: center; padding: 40px; color: #999; font-style: italic; border: 2px dashed #ccc; border-radius: 10px; }
         .wait-time { color: #e67e22; font-weight: bold; font-size: 0.9em; }
-        .estimated-wait { color: #3498db; font-weight: bold; font-size: 0.9em; }
-        .type-badge { padding: 4px 8px; border-radius: 5px; font-size: 0.85em; font-weight: bold; color: white; display: inline-block; }
+        .estimated-wait { color: #3498db; font-weight: bold; font-size: 0.9em; margin-top: 5px; }
+        
+        .type-badge { padding: 4px 8px; border-radius: 5px; font-size: 0.85em; font-weight: bold; color: white; }
         .type-web { background: #9b59b6; }
         .type-shop { background: #3498db; }
-        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin: 2px; display: inline-block; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; display: inline-block; margin-top: 5px; }
         .badge-arrived { background: #27ae60; color: white; }
         .badge-called { background: #e67e22; color: white; }
         .badge-absent { background: #e74c3c; color: white; }
-        
-        .action-buttons { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
-        
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .controls { flex-direction: column; align-items: stretch; }
-            .controls button { width: 100%; }
-        }
     </style>
 </head>
 <body>
@@ -120,7 +146,7 @@
         <div class="setting-control">
             <input type="checkbox" id="waitTimeDisplayEnabled" onchange="toggleWaitTimeDisplay()">
             <label for="waitTimeDisplayEnabled">⏱️ 待ち時間目安を表示する</label>
-            <span class="setting-status status-on" id="waitTimeDisplayStatus">ON</span>
+            <span class="setting-status status-off" id="waitTimeDisplayStatus">OFF</span>
         </div>
     </div>
 
@@ -141,26 +167,8 @@
 
     <div class="card">
         <h2>👥 待ち状況一覧</h2>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>番号</th>
-                        <th>お名前</th>
-                        <th>受付時刻</th>
-                        <th>待ち時間</th>
-                        <th>目安</th>
-                        <th>人数(大/子/幼)</th>
-                        <th>座席希望</th>
-                        <th>タイプ</th>
-                        <th>状態</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="list">
-                    <tr><td colspan="10" class="no-data">待ち客はいません</td></tr>
-                </tbody>
-            </table>
+        <div id="list" class="admin-grid">
+            <div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>
         </div>
     </div>
 
@@ -168,7 +176,8 @@
         const socket = io();
         let voiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
         let printerEnabled = true;
-        let waitTimeDisplayEnabled = true;
+        // ★ 初期値の待ち時間目安を非表示にする
+        let waitTimeDisplayEnabled = false; 
         
         // 時計更新
         function updateClock() {
@@ -241,14 +250,10 @@
         function speakNumber(displayId, name, adults, children, infants) {
             if (!voiceEnabled || !window.speechSynthesis) return;
             
-            // 既存の読み上げをキャンセル
             window.speechSynthesis.cancel();
             
-            // 読み上げテキストを作成
             let text = `${displayId.replace('-', '番、')}`;
-            if (name) {
-                text += `、${name}様`;
-            }
+            if (name) text += `、${name}様`;
             text += `、大人${adults}名`;
             if (children > 0) text += `、子供${children}名`;
             if (infants > 0) text += `、幼児${infants}名`;
@@ -256,7 +261,7 @@
             
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'ja-JP';
-            utterance.rate = 0.9; // 少しゆっくり
+            utterance.rate = 0.9; 
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
@@ -273,65 +278,77 @@
             return `${hours}時間${mins}分`;
         }
 
-        // UI更新
+        // UI更新 (カード型グリッドに変更)
         function updateUI(d) {
             const stats = d.stats || {};
-            document.getElementById('queueCount').innerText = d.queue.length;
+            document.getElementById('queueCount').innerText = d.queue ? d.queue.length : 0;
             document.getElementById('totalToday').innerText = stats.totalToday || 0;
             document.getElementById('completedToday').innerText = stats.completedToday || 0;
             document.getElementById('avgWait').innerText = stats.averageWaitTime || 0;
 
             const list = document.getElementById('list');
-            if (d.queue.length === 0) {
-                list.innerHTML = '<tr><td colspan="10" class="no-data">待ち客はいません</td></tr>';
+            if (!d.queue || d.queue.length === 0) {
+                list.innerHTML = '<div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>';
             } else {
                 list.innerHTML = d.queue.map(g => {
                     const waitTime = getWaitTime(g.timestamp);
                     const estimatedWait = g.estimatedWait ? `約${g.estimatedWait}分` : '-';
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
-                    const nameDisplay = g.name || '-';
+                    const nameDisplay = g.name || '名前なし';
                     
-                    let rowClass = '';
+                    let cardClass = '';
                     let statusBadges = '';
                     let actionButtons = '';
                     
                     if (g.arrived) {
-                        rowClass = 'arrived';
+                        cardClass = 'arrived';
                         statusBadges += '<span class="status-badge badge-arrived">✅ 到着済み</span>';
                     }
                     if (g.called) {
-                        rowClass = 'called';
+                        cardClass = 'called';
                         statusBadges += '<span class="status-badge badge-called">📢 呼び出し中</span>';
                     }
                     if (g.absent) {
-                        rowClass = 'absent';
-                        statusBadges += '<span class="status-badge badge-absent">⚠️ 不在(10分後自動削除)</span>';
+                        cardClass = 'absent';
+                        statusBadges += '<span class="status-badge badge-absent">⚠️ 不在(10分後削除)</span>';
                         actionButtons += `<button class="btn-cancel-absent" onclick="cancelAbsent('${g.displayId}')">不在解除</button>`;
                     } else {
                         actionButtons += `<button class="btn-absent" onclick="markAbsent('${g.displayId}')">不在</button>`;
                     }
                     
                     if (!g.called) {
-                        actionButtons += `<button class="btn-call" onclick="callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">📢 呼び出し</button>`;
+                        actionButtons += `<button class="btn-call" onclick="callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">📢 呼出</button>`;
                     } else {
-                        actionButtons += `<button class="btn-recall" onclick="recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">🔁 再呼び出し</button>`;
+                        actionButtons += `<button class="btn-recall" onclick="recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">🔁 再呼出</button>`;
                     }
                     actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
                     
+                    // 待ち時間目安の表示制御
+                    let waitTimeHtml = '';
+                    if (waitTimeDisplayEnabled && g.estimatedWait) {
+                        waitTimeHtml = `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>`;
+                    }
+                    
                     return `
-                        <tr class="${rowClass}">
-                            <td style="font-weight:bold; color:#8b0000; font-size:1.1em;">${g.displayId}</td>
-                            <td style="font-weight:600;">${nameDisplay}</td>
-                            <td>${g.time}</td>
-                            <td class="wait-time">${waitTime}</td>
-                            <td class="estimated-wait">${estimatedWait}</td>
-                            <td>${g.adults}名 / ${g.children}名 / ${g.infants}名</td>
-                            <td>${g.pref}</td>
-                            <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
-                            <td>${statusBadges || '-'}</td>
-                            <td><div class="action-buttons">${actionButtons}</div></td>
-                        </tr>
+                        <div class="admin-card ${cardClass}">
+                            <div class="admin-card-header">
+                                <span class="admin-card-id">${g.displayId}</span>
+                                <span class="type-badge ${typeClass}">${typeLabel}</span>
+                            </div>
+                            <div class="admin-card-body">
+                                <div style="margin-bottom: 5px;"><b>${nameDisplay}</b> 様</div>
+                                <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
+                                <div>🪑 ${g.pref}</div>
+                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
+                                <div class="wait-time">⏳ 待機: ${waitTime}</div>
+                                ${waitTimeHtml}
+                                <div>${statusBadges}</div>
+                            </div>
+                            <div class="admin-card-actions">
+                                ${actionButtons}
+                            </div>
+                        </div>
                     `;
                 }).join('');
             }
@@ -354,17 +371,24 @@
         });
 
         socket.on('init', d => {
-            updateUI(d);
+            // ★ 管理画面を新規で開いた時、自動でサーバーの待ち時間表示をOFFに同期させる
+            if (!sessionStorage.getItem('wait_time_initialized')) {
+                socket.emit('setWaitTimeDisplay', { enabled: false });
+                waitTimeDisplayEnabled = false;
+                sessionStorage.setItem('wait_time_initialized', 'true');
+            } else {
+                if (d.waitTimeDisplayEnabled !== undefined) {
+                    waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
+                }
+            }
             
-            // 設定を復元
             if (d.printerEnabled !== undefined) {
                 printerEnabled = d.printerEnabled;
-                updatePrinterStatus();
             }
-            if (d.waitTimeDisplayEnabled !== undefined) {
-                waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
-                updateWaitTimeDisplayStatus();
-            }
+            
+            updatePrinterStatus();
+            updateWaitTimeDisplayStatus();
+            updateUI(d);
             
             const label = document.getElementById('statusLabel');
             if (d.isAccepting) {
@@ -415,7 +439,6 @@
             if (confirm(`${id} ${nameText}お客様を呼び出しますか？\n（相手に通知が届きます）`)) {
                 socket.emit('callGuest', { displayId: id });
                 playSound('call');
-                // 音声読み上げ
                 speakNumber(id, name, adults, children, infants);
             }
         }
@@ -424,7 +447,6 @@
             if (confirm(`${id} を再度呼び出しますか？`)) {
                 socket.emit('callGuest', { displayId: id });
                 playSound('call');
-                // 音声読み上げ
                 speakNumber(id, name, adults, children, infants);
             }
         }
