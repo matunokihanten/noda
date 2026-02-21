@@ -16,7 +16,7 @@ app.use(express.json());
 
 const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten.yoyaku@gmail.com';
 const GMAIL_USER = process.env.GMAIL_USER || 'matunokihanten.yoyaku@gmail.com'; 
-const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS || 'gphm kodc uzbp dcmh'; // ★修正: スペースなしをデフォルトに
+const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS || 'gphmkodcuzbpdcmh'; // ★修正: スペースなしをデフォルトに
 const DATA_FILE = path.join(__dirname, 'queue-data.json');
 
 // プリンター設定
