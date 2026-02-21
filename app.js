@@ -16,7 +16,7 @@ app.use(express.json());
 
 const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten.yoyaku@gmail.com';
 const GMAIL_USER = process.env.GMAIL_USER || 'matunokihanten.yoyaku@gmail.com'; 
-const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS || 'gphmkodcuzbpdcmh'; // ★修正: スペースなしをデフォルトに
+const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS || 'gphm kodc uzbp dcmh'; // ★修正: スペースなしをデフォルトに
 const DATA_FILE = path.join(__dirname, 'queue-data.json');
 
 // プリンター設定
@@ -171,6 +171,11 @@ try {
         // ★修正: パスワードのスペースを自動で削除して設定を確実にする
         auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS.replace(/\s+/g, '') }
     });
+
+    // 起動時に接続確認を行う（問題があればログに出す）
+    transporter.verify()
+      .then(() => console.log('✅ SMTP接続確認: transporter is ready'))
+      .catch(err => console.error('❌ SMTP接続確認エラー:', err));
 } catch (error) {
     console.error('❌ メール設定エラー:', error.message);
 }
@@ -308,7 +313,7 @@ io.on('connection', (socket) => {
     }));
     socket.emit('init', { isAccepting, queue: queueWithEstimate, stats, printerEnabled, waitTimeDisplayEnabled });
 
-    socket.on('register', (data) => {
+    socket.on('register', async (data) => {
         if (!isAccepting) {
             socket.emit('error', { message: '現在受付を停止しています' });
             return;
@@ -345,12 +350,21 @@ io.on('connection', (socket) => {
 
             // ★修正: メール送信（Web・店舗両方の受付で送信可能に条件緩和）
             if (transporter) {
+                // 送信先は受付データに email があればお客様へ、それがなければ店舗へ通知
+                const recipient = (data.email && data.email.trim().length > 0) ? data.email.trim() : SHOP_EMAIL;
                 const mailOptions = {
-                    from: GMAIL_USER, to: SHOP_EMAIL,
+                    from: GMAIL_USER,
+                    to: recipient,
                     subject: `【松乃木飯店】新規予約 ${displayId}`,
                     text: `予約通知\n\n番号：${displayId}\n${newGuest.name ? `お名前：${newGuest.name}\n` : ''}大人：${data.adults}名\n子供：${data.children}名\n幼児：${data.infants}名\n希望座席：${data.pref}\n受付時刻：${newGuest.fullDateTime}`
                 };
-                transporter.sendMail(mailOptions).catch(err => { console.error('❌ メール送信エラー:', err.message); });
+
+                try {
+                    const info = await transporter.sendMail(mailOptions);
+                    console.log(`📧 メール送信成功: messageId=${info.messageId} to=${mailOptions.to}`);
+                } catch (err) {
+                    console.error('❌ メール送信エラー詳細:', err);
+                }
             }
         } catch (error) {
             console.error('❌ 受付エラー:', error.message);
