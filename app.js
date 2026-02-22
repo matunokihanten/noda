@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const axios = require('axios'); 
+const axios = require('axios');
 const fs = require('fs');
 const iconv = require('iconv-lite');
 
@@ -54,7 +54,6 @@ async function sendLineNotification(messageText) {
         { messages: [{ type: 'text', text: messageText }] },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_ACCESS_TOKEN}` } }
         );
-        console.log("✅ LINE通知を送信しました");
     } catch (e) { console.error("❌ LINE送信失敗:", e.response ? e.response.data : e.message); }
 }
 
@@ -72,7 +71,7 @@ async function sendEmailBackup(subject, text) {
         try {
             const transport = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS } });
             await transport.sendMail(mailOptions);
-        } catch (e) { console.error("❌ 全てのメール送信が失敗しました"); }
+        } catch (e) {}
     }
 }
 
@@ -149,14 +148,15 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 📢 【今回追加】お客さんのスマホへ呼出を転送する
+    // 📢 管理画面からの呼出をお客さんのスマホに中継する
     socket.on('callGuest', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.called = true; // 呼出済みにする
+            guest.called = true;
             saveData();
             io.emit('update', { queue, stats });
-            io.emit('called', guest); // お客さんのスマホへ「呼ばれたよ」と送る
+            // ここで全てのお客さんのスマホへ「呼ばれたよ」と合図を送る
+            io.emit('guestCalled', { displayId: guest.displayId, type: guest.type });
         }
     });
 
