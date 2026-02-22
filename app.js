@@ -34,9 +34,9 @@ let isAccepting = true;
 let waitTimeDisplayEnabled = false;
 
 // 内部計算用の変数
-let waitTimes = []; // 直近の待ち時間計算用
-let acceptanceTimer = null; // 受付自動再開タイマー
-let absentTimers = {}; // 不在自動削除タイマー
+let waitTimes = []; 
+let acceptanceTimer = null; 
+let absentTimers = {}; 
 
 // 💾 データの読み込み
 if (fs.existsSync(DATA_FILE)) {
@@ -113,7 +113,6 @@ app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.u
 
 // 💬 Socket.io 通信
 io.on('connection', (socket) => {
-    // 接続時に現在の全ステータスを送信
     socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled });
 
     // 新規登録
@@ -122,16 +121,13 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: '現在受付を停止しております。' });
             return;
         }
-
         const prefix = data.type === 'shop' ? 'S' : 'W';
-        // 1組あたり仮に5分として目安時間を計算（平均待ち時間があればそれを使用）
         const calcWait = stats.averageWaitTime > 0 ? stats.averageWaitTime : 5;
         const estimatedWait = queue.length * calcWait;
 
         const newGuest = { 
             displayId: `${prefix}-${nextNumber++}`, 
             ...data, 
-            targetTime: data.targetTime || '今すぐ', 
             timestamp: Date.now(), 
             time: new Date().toLocaleTimeString('ja-JP'),
             arrived: data.type === 'shop',
@@ -145,7 +141,7 @@ io.on('connection', (socket) => {
 
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
         
-        const msg = `【松乃木飯店 予約】\n番号：${newGuest.displayId}\n到着：${newGuest.targetTime}\n人数：${data.adults}名\n名前：${data.name || 'なし'}様`;
+        const msg = `【松乃木飯店 予約】\n番号：${newGuest.displayId}\n人数：${data.adults}名\n名前：${data.name || 'なし'}様`;
         sendLineNotification(msg);
         sendEmailBackup(`新規受付 ${newGuest.displayId}`, msg);
 
@@ -153,20 +149,12 @@ io.on('connection', (socket) => {
         socket.emit('registered', newGuest);
     });
 
-    // 案内完了・ステータス更新
-    socket.on('updateStatus', ({ displayId, status }) => {
-        if (status === 'completed') {
-            const guest = queue.find(g => g.displayId === displayId);
-            if (guest) {
-                // 待ち時間の計算（分）
-                const waitMins = Math.floor((Date.now() - guest.timestamp) / 60000);
-                waitTimes.push(waitMins);
-                if (waitTimes.length > 10) waitTimes.shift(); // 直近10件で平均を出す
-                stats.averageWaitTime = Math.floor(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length);
-            }
-
-            queue = queue.filter(g => g.displayId !== displayId);
-            stats.completedToday++;
+    // 🌟 お客さま自身によるキャンセル処理
+    socket.on('cancelReservation', ({ displayId }) => {
+        const guestIndex = queue.findIndex(g => g.displayId === displayId);
+        if (guestIndex !== -1) {
+            const guest = queue[guestIndex];
+            queue.splice(guestIndex, 1);
             
             // 不在タイマーがあれば解除
             if (absentTimers[displayId]) {
@@ -176,10 +164,31 @@ io.on('connection', (socket) => {
 
             saveData();
             io.emit('update', { queue, stats });
+            console.log(`🗑 キャンセル完了: ${displayId}`);
         }
     });
 
-    // 到着マーク
+    // 案内完了
+    socket.on('updateStatus', ({ displayId, status }) => {
+        if (status === 'completed') {
+            const guest = queue.find(g => g.displayId === displayId);
+            if (guest) {
+                const waitMins = Math.floor((Date.now() - guest.timestamp) / 60000);
+                waitTimes.push(waitMins);
+                if (waitTimes.length > 10) waitTimes.shift();
+                stats.averageWaitTime = Math.floor(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length);
+            }
+            queue = queue.filter(g => g.displayId !== displayId);
+            stats.completedToday++;
+            if (absentTimers[displayId]) {
+                clearTimeout(absentTimers[displayId]);
+                delete absentTimers[displayId];
+            }
+            saveData();
+            io.emit('update', { queue, stats });
+        }
+    });
+
     socket.on('markArrived', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) { 
@@ -190,15 +199,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 不在マーク（10分後に自動削除）
     socket.on('markAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
             guest.absent = true;
             saveData();
             io.emit('update', { queue, stats });
-            
-            // 10分(600000ms)後に自動削除
             absentTimers[displayId] = setTimeout(() => {
                 queue = queue.filter(g => g.displayId !== displayId);
                 saveData();
@@ -208,14 +214,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 不在解除
     socket.on('cancelAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
             guest.absent = false;
             saveData();
             io.emit('update', { queue, stats });
-            
             if (absentTimers[displayId]) {
                 clearTimeout(absentTimers[displayId]);
                 delete absentTimers[displayId];
@@ -223,7 +227,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 📢 呼出
     socket.on('callGuest', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
@@ -234,7 +237,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // キュー番号を1にリセット
     socket.on('resetQueueNumber', () => {
         if (queue.length === 0) { 
             nextNumber = 1; 
@@ -245,7 +247,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 統計のみリセット
     socket.on('resetStats', () => {
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0 };
         waitTimes = [];
@@ -253,17 +254,9 @@ io.on('connection', (socket) => {
         io.emit('update', { queue, stats });
     });
 
-    // 受付の停止・再開（タイマー対応）
     socket.on('setAcceptance', ({ status, duration }) => {
         isAccepting = status;
-        
-        // 既存のタイマーがあればクリア
-        if (acceptanceTimer) {
-            clearTimeout(acceptanceTimer);
-            acceptanceTimer = null;
-        }
-
-        // durationが設定されている場合（分単位）
+        if (acceptanceTimer) { clearTimeout(acceptanceTimer); acceptanceTimer = null; }
         if (!status && duration > 0) {
             acceptanceTimer = setTimeout(() => {
                 isAccepting = true;
@@ -271,19 +264,16 @@ io.on('connection', (socket) => {
                 io.emit('statusChange', { isAccepting: true });
             }, duration * 60 * 1000);
         }
-        
         saveData();
         io.emit('statusChange', { isAccepting });
     });
 
-    // プリンター設定変更
     socket.on('setPrinterEnabled', ({ enabled }) => {
         printerEnabled = enabled;
         saveData();
         io.emit('printerStatusChanged', { printerEnabled });
     });
 
-    // 待ち時間目安表示の設定変更
     socket.on('setWaitTimeDisplay', ({ enabled }) => {
         waitTimeDisplayEnabled = enabled;
         saveData();
@@ -291,22 +281,16 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🔄 日次リセット処理（毎日深夜0時に実行）
+// 日次リセット
 setInterval(() => {
-    const now = new Date();
-    // 日本時間で取得
-    const jstNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-    
-    // 0時0分の場合にリセットを実行
+    const jstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jstNow.getHours() === 0 && jstNow.getMinutes() === 0) {
-        queue = [];
-        nextNumber = 1;
+        queue = []; nextNumber = 1;
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0 };
-        waitTimes = [];
-        saveData();
+        waitTimes = []; saveData();
         io.emit('dailyReset');
     }
-}, 60000); // 1分ごとにチェック
+}, 60000);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => console.log(`🚀 System Running on Port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Running on Port ${PORT}`));
