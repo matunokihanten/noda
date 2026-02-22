@@ -43,6 +43,12 @@
         .status-on { background: #27ae60; color: white; }
         .status-off { background: #e74c3c; color: white; }
         
+        /* 折りたたみ機能のスタイル */
+        .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .collapsible-header:hover { opacity: 0.7; }
+        .toggle-icon { font-size: 0.8em; transition: transform 0.3s ease; color: #666; }
+        .collapsed .toggle-icon { transform: rotate(-90deg); }
+        
         /* 新しいグリッドレイアウト（6列） */
         .admin-grid {
             display: grid;
@@ -129,53 +135,47 @@
     </div>
 
     <div class="card">
-        <h2>⚙️ システム設定</h2>
-        
-        <div class="setting-control">
-            <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()">
-            <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
-            <span class="setting-status status-off" id="notificationSoundStatus">OFF</span>
-        </div>
-
-        <div class="setting-control" style="background: #fff3e0;">
-            <div style="flex:1; display:flex; align-items:center;">
-                <label for="soundDuration" style="margin-right:15px; flex: none;">⏱️ 通知音の長さ:</label>
-                <input type="range" id="soundDuration" min="1" max="10" value="3" oninput="updateSoundDurationLabel()" onchange="updateSoundDuration()" style="flex:1; cursor: pointer;">
+        <h2 id="settingsHeader" class="collapsible-header" onclick="toggleSection('settingsContent', 'settingsHeader')">
+            <span>⚙️ システム設定</span>
+            <span class="toggle-icon">▼</span>
+        </h2>
+        <div id="settingsContent">
+            <div class="setting-control">
+                <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
+                <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
+                <span class="setting-status status-off" id="voiceStatus">OFF</span>
             </div>
-            <span class="setting-status" id="soundDurationLabel" style="background:#e67e22; color:white; min-width: 60px; text-align:center;">3秒</span>
-        </div>
-
-        <div class="setting-control">
-            <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
-            <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
-            <span class="setting-status status-off" id="voiceStatus">OFF</span>
-        </div>
-        
-        <div class="setting-control">
-            <input type="checkbox" id="printerEnabled" onchange="togglePrinter()">
-            <label for="printerEnabled">🖨️ 店舗受付時に番号を印刷する</label>
-            <span class="setting-status status-on" id="printerStatus">ON</span>
-        </div>
-        
-        <div class="setting-control">
-            <input type="checkbox" id="waitTimeDisplayEnabled" onchange="toggleWaitTimeDisplay()">
-            <label for="waitTimeDisplayEnabled">⏱️ 待ち時間目安を表示する</label>
-            <span class="setting-status status-off" id="waitTimeDisplayStatus">OFF</span>
+            
+            <div class="setting-control">
+                <input type="checkbox" id="printerEnabled" onchange="togglePrinter()">
+                <label for="printerEnabled">🖨️ 店舗受付時に番号を印刷する</label>
+                <span class="setting-status status-on" id="printerStatus">ON</span>
+            </div>
+            
+            <div class="setting-control">
+                <input type="checkbox" id="waitTimeDisplayEnabled" onchange="toggleWaitTimeDisplay()">
+                <label for="waitTimeDisplayEnabled">⏱️ 待ち時間目安を表示する</label>
+                <span class="setting-status status-off" id="waitTimeDisplayStatus">OFF</span>
+            </div>
         </div>
     </div>
 
     <div class="card">
-        <h2>📋 受付コントロール</h2>
-        
-        <div id="statusLabel" class="status-accepting">状態確認中...</div>
-        <div class="controls">
-            <label>停止時間設定：</label>
-            <button class="btn-stop" onclick="setAccept(false, 0)">今すぐ停止</button>
-            <button class="btn-stop" onclick="setAccept(false, 30)">30分停止</button>
-            <button class="btn-stop" onclick="setAccept(false, 60)">60分停止</button>
-            <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
-            <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
-            <button class="btn-danger" onclick="resetQueueNumber()">🔄 番号を1にリセット</button>
+        <h2 id="controlsHeader" class="collapsible-header" onclick="toggleSection('controlsContent', 'controlsHeader')">
+            <span>📋 受付コントロール</span>
+            <span class="toggle-icon">▼</span>
+        </h2>
+        <div id="controlsContent">
+            <div id="statusLabel" class="status-accepting">状態確認中...</div>
+            <div class="controls">
+                <label>停止時間設定：</label>
+                <button class="btn-stop" onclick="setAccept(false, 0)">今すぐ停止</button>
+                <button class="btn-stop" onclick="setAccept(false, 30)">30分停止</button>
+                <button class="btn-stop" onclick="setAccept(false, 60)">60分停止</button>
+                <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
+                <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
+                <button class="btn-danger" onclick="resetQueueNumber()">🔄 番号を1にリセット</button>
+            </div>
         </div>
     </div>
 
@@ -190,14 +190,8 @@
         const socket = io();
         let voiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
         let printerEnabled = true;
+        // ★ 初期値の待ち時間目安を非表示にする
         let waitTimeDisplayEnabled = false; 
-        
-        let notificationSoundEnabled = false;
-        let lastQueueLength = 0;
-        let isFirstLoad = true;
-        
-        // ★ 通知音の長さを保存・復元する変数（デフォルト3秒）
-        let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
         
         // 時計更新
         function updateClock() {
@@ -209,46 +203,22 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // ページ読み込み時の設定復元
+        // 💡 折りたたみ開閉の実行関数
+        function toggleSection(contentId, headerId) {
+            const content = document.getElementById(contentId);
+            const header = document.getElementById(headerId);
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                header.classList.remove('collapsed');
+            } else {
+                content.style.display = 'none';
+                header.classList.add('collapsed');
+            }
+        }
+
+        // 設定の復元
         document.getElementById('voiceEnabled').checked = voiceEnabled;
         updateVoiceStatus();
-        document.getElementById('soundDuration').value = soundDuration;
-        updateSoundDurationLabel();
-
-        // 通知音のON/OFF切り替え
-        function toggleNotificationSound() {
-            notificationSoundEnabled = document.getElementById('notificationSoundEnabled').checked;
-            const status = document.getElementById('notificationSoundStatus');
-            if (notificationSoundEnabled) {
-                status.textContent = 'ON';
-                status.className = 'setting-status status-on';
-                playSound('new_reservation'); // テスト再生
-            } else {
-                status.textContent = 'OFF';
-                status.className = 'setting-status status-off';
-            }
-        }
-
-        // 通知音の長さ（ラベル表示のみ更新）
-        function updateSoundDurationLabel() {
-            document.getElementById('soundDurationLabel').innerText = document.getElementById('soundDuration').value + '秒';
-        }
-
-        // 通知音の長さ（保存とテスト再生）
-        function updateSoundDuration() {
-            soundDuration = parseInt(document.getElementById('soundDuration').value);
-            localStorage.setItem('soundDuration', soundDuration);
-            updateSoundDurationLabel();
-            
-            // スライダーを離した時にONになっていればテスト再生する
-            if (notificationSoundEnabled) {
-                playSound('new_reservation');
-            } else {
-                // OFFの場合はONにしてからテスト再生してあげる
-                document.getElementById('notificationSoundEnabled').checked = true;
-                toggleNotificationSound();
-            }
-        }
 
         function updateVoiceStatus() {
             const status = document.getElementById('voiceStatus');
@@ -303,6 +273,7 @@
             socket.emit('setWaitTimeDisplay', { enabled: waitTimeDisplayEnabled });
         }
 
+        // 音声読み上げ機能
         function speakNumber(displayId, name, adults, children, infants) {
             if (!voiceEnabled || !window.speechSynthesis) return;
             
@@ -324,6 +295,7 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        // 待ち時間計算
         function getWaitTime(timestamp) {
             const now = Date.now();
             const diff = Math.floor((now - timestamp) / 1000 / 60);
@@ -333,6 +305,7 @@
             return `${hours}時間${mins}分`;
         }
 
+        // UI更新 (カード型グリッドに変更)
         function updateUI(d) {
             const stats = d.stats || {};
             document.getElementById('queueCount').innerText = d.queue ? d.queue.length : 0;
@@ -378,6 +351,7 @@
                     }
                     actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
                     
+                    // 待ち時間目安の表示制御
                     let waitTimeHtml = '';
                     if (waitTimeDisplayEnabled && g.estimatedWait) {
                         waitTimeHtml = `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>`;
@@ -407,6 +381,7 @@
             }
         }
 
+        // ステータス変更
         socket.on('statusChange', s => {
             const isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             const label = document.getElementById('statusLabel');
@@ -423,11 +398,7 @@
         });
 
         socket.on('init', d => {
-            if (d.queue) {
-                lastQueueLength = d.queue.length;
-                isFirstLoad = false;
-            }
-
+            // ★ 管理画面を新規で開いた時、自動でサーバーの待ち時間表示をOFFに同期させる
             if (!sessionStorage.getItem('wait_time_initialized')) {
                 socket.emit('setWaitTimeDisplay', { enabled: false });
                 waitTimeDisplayEnabled = false;
@@ -456,16 +427,7 @@
             }
         });
         
-        socket.on('update', d => {
-            if (d.queue) {
-                if (!isFirstLoad && notificationSoundEnabled && d.queue.length > lastQueueLength) {
-                    playSound('new_reservation');
-                }
-                lastQueueLength = d.queue.length;
-                isFirstLoad = false;
-            }
-            updateUI(d);
-        });
+        socket.on('update', d => updateUI(d));
 
         socket.on('printerStatusChanged', data => {
             printerEnabled = data.printerEnabled;
@@ -549,53 +511,26 @@
             }
         }
 
-        // サウンド再生（指定された秒数分、音を繰り返して鳴らす）
+        // サウンド再生
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
             if (type === 'call') {
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
                 oscillator.frequency.value = 880;
                 gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.3);
             } else if (type === 'info') {
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
                 oscillator.frequency.value = 600;
                 gainNode.gain.value = 0.2;
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.15);
-            } else if (type === 'new_reservation') {
-                // スライダーで設定された長さ（秒数）を取得
-                const durationSeconds = parseInt(document.getElementById('soundDuration').value) || 3;
-                
-                // 設定された秒数の分だけ「ピロン♪」を1秒間隔でスケジュールして再生
-                for (let i = 0; i < durationSeconds; i++) {
-                    let startTime = audioContext.currentTime + (i * 1.0); // 1秒ごとに鳴らす
-                    
-                    const osc = audioContext.createOscillator();
-                    const gain = audioContext.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioContext.destination);
-                    
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(1046.50, startTime); // C6
-                    osc.frequency.setValueAtTime(1318.51, startTime + 0.15); // E6
-
-                    gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.5);
-                }
             }
         }
 
