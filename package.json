@@ -1,24 +1,16 @@
 {
-  "name": "my-node-app",
+  "name": "matsunoki-hanten",
   "version": "1.0.0",
-  "description": "",
+  "description": "順番待ちシステム",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon app.js"
+    "start": "node app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
     "iconv-lite": "^0.6.3",
-    "node-fetch": "^2.7.0",
-    "nodemailer": "^8.0.1",
-    "socket.io": "^4.8.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemailer": "^6.9.7",
+    "socket.io": "^4.7.2",
+    "axios": "^1.6.7" 
   }
 }
