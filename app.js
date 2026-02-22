@@ -14,8 +14,8 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten.yoyaku@gmail.com';
-const GMAIL_USER = process.env.GMAIL_USER || 'matunokihanten.yoyaku@gmail.com'; 
+const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten@gmail.com';
+const GMAIL_USER = process.env.GMAIL_USER || 'matunokihanten@gmail.com'; 
 const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS || 'rstndmfzonqagpri'; 
 const DATA_FILE = path.join(__dirname, 'queue-data.json');
 
