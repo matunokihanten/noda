@@ -137,6 +137,14 @@
             <span class="setting-status status-off" id="notificationSoundStatus">OFF</span>
         </div>
 
+        <div class="setting-control" style="background: #fff3e0;">
+            <div style="flex:1; display:flex; align-items:center;">
+                <label for="soundDuration" style="margin-right:15px; flex: none;">⏱️ 通知音の長さ:</label>
+                <input type="range" id="soundDuration" min="1" max="10" value="3" oninput="updateSoundDurationLabel()" onchange="updateSoundDuration()" style="flex:1; cursor: pointer;">
+            </div>
+            <span class="setting-status" id="soundDurationLabel" style="background:#e67e22; color:white; min-width: 60px; text-align:center;">3秒</span>
+        </div>
+
         <div class="setting-control">
             <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
             <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
@@ -184,10 +192,12 @@
         let printerEnabled = true;
         let waitTimeDisplayEnabled = false; 
         
-        // 新規追加：通知音の変数
         let notificationSoundEnabled = false;
         let lastQueueLength = 0;
         let isFirstLoad = true;
+        
+        // ★ 通知音の長さを保存・復元する変数（デフォルト3秒）
+        let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
         
         // 時計更新
         function updateClock() {
@@ -199,21 +209,44 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 設定の復元
+        // ページ読み込み時の設定復元
         document.getElementById('voiceEnabled').checked = voiceEnabled;
         updateVoiceStatus();
+        document.getElementById('soundDuration').value = soundDuration;
+        updateSoundDurationLabel();
 
-        // 新規追加：通知音のトグル関数
+        // 通知音のON/OFF切り替え
         function toggleNotificationSound() {
             notificationSoundEnabled = document.getElementById('notificationSoundEnabled').checked;
             const status = document.getElementById('notificationSoundStatus');
             if (notificationSoundEnabled) {
                 status.textContent = 'ON';
                 status.className = 'setting-status status-on';
-                playSound('new_reservation'); // テスト再生＆ブラウザの音声再生許可を取得
+                playSound('new_reservation'); // テスト再生
             } else {
                 status.textContent = 'OFF';
                 status.className = 'setting-status status-off';
+            }
+        }
+
+        // 通知音の長さ（ラベル表示のみ更新）
+        function updateSoundDurationLabel() {
+            document.getElementById('soundDurationLabel').innerText = document.getElementById('soundDuration').value + '秒';
+        }
+
+        // 通知音の長さ（保存とテスト再生）
+        function updateSoundDuration() {
+            soundDuration = parseInt(document.getElementById('soundDuration').value);
+            localStorage.setItem('soundDuration', soundDuration);
+            updateSoundDurationLabel();
+            
+            // スライダーを離した時にONになっていればテスト再生する
+            if (notificationSoundEnabled) {
+                playSound('new_reservation');
+            } else {
+                // OFFの場合はONにしてからテスト再生してあげる
+                document.getElementById('notificationSoundEnabled').checked = true;
+                toggleNotificationSound();
             }
         }
 
@@ -270,7 +303,6 @@
             socket.emit('setWaitTimeDisplay', { enabled: waitTimeDisplayEnabled });
         }
 
-        // 音声読み上げ機能
         function speakNumber(displayId, name, adults, children, infants) {
             if (!voiceEnabled || !window.speechSynthesis) return;
             
@@ -292,7 +324,6 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // 待ち時間計算
         function getWaitTime(timestamp) {
             const now = Date.now();
             const diff = Math.floor((now - timestamp) / 1000 / 60);
@@ -302,7 +333,6 @@
             return `${hours}時間${mins}分`;
         }
 
-        // UI更新
         function updateUI(d) {
             const stats = d.stats || {};
             document.getElementById('queueCount').innerText = d.queue ? d.queue.length : 0;
@@ -426,7 +456,6 @@
             }
         });
         
-        // 変更箇所：アップデート時に予約増加を検知して音を鳴らす
         socket.on('update', d => {
             if (d.queue) {
                 if (!isFirstLoad && notificationSoundEnabled && d.queue.length > lastQueueLength) {
@@ -520,40 +549,53 @@
             }
         }
 
-        // サウンド再生（新規予約用の音を追加）
+        // サウンド再生（指定された秒数分、音を繰り返して鳴らす）
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
             if (type === 'call') {
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
                 oscillator.frequency.value = 880;
                 gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.3);
             } else if (type === 'info') {
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
                 oscillator.frequency.value = 600;
                 gainNode.gain.value = 0.2;
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.15);
             } else if (type === 'new_reservation') {
-                // 新規追加：「ピロン♪」という明るい通知音
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime); // C6
-                oscillator.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.15); // E6
+                // スライダーで設定された長さ（秒数）を取得
+                const durationSeconds = parseInt(document.getElementById('soundDuration').value) || 3;
+                
+                // 設定された秒数の分だけ「ピロン♪」を1秒間隔でスケジュールして再生
+                for (let i = 0; i < durationSeconds; i++) {
+                    let startTime = audioContext.currentTime + (i * 1.0); // 1秒ごとに鳴らす
+                    
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1046.50, startTime); // C6
+                    osc.frequency.setValueAtTime(1318.51, startTime + 0.15); // E6
 
-                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.2);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
+                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.2);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
 
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.5);
+                }
             }
         }
 
