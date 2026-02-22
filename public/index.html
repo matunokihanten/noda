@@ -6,429 +6,180 @@
     <title>松乃木飯店 ネット順番待ち</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #fdfaf5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        header h1 { margin: 0; font-size: 1.5em; font-weight: bold; }
-        header .subtitle { font-size: 0.9em; opacity: 0.9; margin-top: 5px; }
+        body { font-family: sans-serif; background: #fdfaf5; margin: 0; padding: 0; }
+        header { background: #8b0000; color: white; padding: 15px; text-align: center; }
+        .container { padding: 20px; max-width: 600px; margin: auto; }
+        .box { background: white; padding: 20px; border-radius: 15px; border: 2px solid #d4b483; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.3s; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 1.1em; box-sizing: border-box; }
+        .btn { background: #8b0000; color: white; border: none; padding: 15px; width: 100%; font-size: 1.2em; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .notice { background: #fff4f4; border: 3px solid #ff0000; padding: 15px; margin-top: 15px; text-align: center; border-radius: 10px; }
+        .queue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 20px; }
+        .q-card { background: #fff; border: 1px solid #d4b483; padding: 10px; text-align: center; border-radius: 8px; }
         
-        .main-container { display: flex; flex: 1; height: calc(100vh - 80px); }
-
-        /* 左側：入力フォーム */
-        .left-panel { width: 420px; padding: 20px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
-        .form-box { background: white; padding: 20px; border-radius: 20px; width: 100%; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        /* 入力フィールド */
-        input[type="text"] { padding: 12px; margin: 10px 0; width: 100%; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; transition: border-color 0.3s; }
-        input[type="text"]:focus { outline: none; border-color: #8b0000; }
-        
-        /* 人数入力コントロール */
-        .number-control { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f5f5f5; }
-        .control-label { font-size: 0.95em; font-weight: bold; color: #333; margin-bottom: 8px; display: block; }
-        .control-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; }
-        .num-display { font-size: 2.2em; font-weight: bold; min-width: 60px; text-align: center; color: #8b0000; }
-        .btn-step { background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%); border: 2px solid #ccc; width: 50px; height: 50px; border-radius: 50%; font-size: 1.8em; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
-        .btn-step:hover { background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%); transform: scale(1.05); }
-        .btn-step:active { transform: scale(0.95); }
-        .quick-nums { display: flex; gap: 8px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
-        .btn-quick { background: #fff; border: 2px solid #d4b483; padding: 8px 15px; border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: all 0.3s; font-weight: 600; }
-        .btn-quick:hover { background: #d4b483; color: white; transform: translateY(-2px); }
-
-        /* 座席ボタン */
-        .seat-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0; }
-        .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 15px; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: all 0.3s; font-weight: 600; text-align: center; }
-        .btn-seat:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .btn-seat.selected { background: #8b0000; color: white; border-color: #8b0000; }
-        
-        .btn-submit { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; border: none; padding: 20px; width: 100%; font-size: 1.3em; border-radius: 12px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 10px rgba(139, 0, 0, 0.3); }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(139, 0, 0, 0.4); }
-        .btn-submit:active { transform: translateY(0); }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
-
-        /* 右側：待ち状況グリッド */
-        .right-panel { flex: 1; padding: 20px; background: white; overflow-y: auto; }
-        .queue-header { text-align: center; margin-bottom: 15px; }
-        .queue-header h2 { color: #8b0000; font-size: 1.6em; margin-bottom: 5px; }
-        .queue-count { font-size: 1.2em; color: #666; }
-        .queue-count .num { font-weight: bold; color: #8b0000; font-size: 1.4em; }
-        
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-        .queue-card { background: linear-gradient(135deg, #fffcf5 0%, #fff8f0 100%); border: 2px solid #d4b483; border-radius: 12px; padding: 15px; text-align: center; transition: all 0.3s; }
-        .queue-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
-        .queue-card.arrived { border-color: #27ae60; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
-        .queue-card.called { border-color: #e67e22; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); animation: pulse 2s infinite; }
-        .queue-card.my-number { border: 4px solid #8b0000; box-shadow: 0 8px 20px rgba(139, 0, 0, 0.4); }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        /* 📢 呼出時の点滅アニメーション */
+        @keyframes blink { 
+            0% { opacity: 1; box-shadow: 0 0 20px rgba(231, 76, 60, 0.8); } 
+            50% { opacity: 0.8; box-shadow: 0 0 5px rgba(231, 76, 60, 0.2); } 
+            100% { opacity: 1; box-shadow: 0 0 20px rgba(231, 76, 60, 0.8); } 
         }
-        
-        .queue-id { font-weight: bold; color: #8b0000; font-size: 1.4em; display: block; margin-bottom: 5px; }
-        .queue-info { font-size: 0.85em; color: #666; line-height: 1.4; }
-        .queue-status { font-size: 0.75em; font-weight: bold; margin-top: 5px; padding: 3px; border-radius: 3px; }
-        .estimated-wait { font-size: 0.85em; color: #3498db; font-weight: bold; margin-top: 5px; }
-
-        /* 受付完了チケット */
-        .ticket-area { border: 3px solid #8b0000; animation: fadeIn 0.5s; }
-        .complete-id { font-size: 5em; color: #8b0000; font-weight: bold; text-align: center; margin: 20px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
-        .success-message { color: #27ae60; font-size: 1.2em; font-weight: bold; margin: 10px 0; text-align: center; }
-        .warning-box { background: linear-gradient(135deg, #fff3f3 0%, #ffe8e8 100%); padding: 15px; border-radius: 10px; font-size: 0.95em; color: #d35400; text-align: center; font-weight: bold; margin: 15px 0; border: 2px solid #ffd4d4; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        /* 呼び出し通知 */
-        .call-notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-            color: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            z-index: 10000;
-            text-align: center;
-            display: none;
-            animation: callPulse 1s infinite;
-        }
-        
-        @keyframes callPulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.05); }
-        }
-        
-        .call-notification h2 { font-size: 3em; margin-bottom: 20px; }
-        .call-notification p { font-size: 1.5em; }
-
-        /* 受付停止メッセージ */
-        .stop-message { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; }
-
-        @media (max-width: 1000px) { 
-            .main-container { flex-direction: column; }
-            .left-panel { width: 100%; border-right: none; border-bottom: 2px solid #d4b483; }
-            .grid-container { grid-template-columns: repeat(3, 1fr); }
+        .calling-box { 
+            animation: blink 1.5s infinite; 
+            background: #fff0f0; 
+            border: 4px solid #e74c3c; 
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🏮 松乃木飯店</h1>
-        <div class="subtitle">ネット順番待ち受付</div>
-    </header>
-    
-    <div id="callNotification" class="call-notification">
-        <h2>📢 お呼び出しです</h2>
-        <p>お席の準備ができました<br>店舗へお越しください</p>
-    </div>
-    
-    <div class="main-container">
-        <div class="left-panel">
-            <div id="formArea" class="form-box">
-                <h3 style="margin:0 0 20px; color:#8b0000; text-align:center; font-size:1.3em;">新規受付フォーム</h3>
-                
-                <div id="stopMessage" class="stop-message" style="display:none;">
-                    ⚠️ 現在受付を停止しています
-                </div>
-                
-                <label class="control-label">📝 お名前（任意）</label>
-                <input type="text" id="nameInput" placeholder="お名前を入力（省略可）" maxlength="20">
-                
-                <div class="number-control">
-                    <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('adults', -1)">−</button>
-                        <span id="display-adults" class="num-display">2</span>
-                        <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
-                    </div>
-                    <div class="quick-nums">
-                        <button class="btn-quick" onclick="setNum('adults', 1)">1名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 2)">2名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 4)">4名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 6)">6名</button>
-                    </div>
-                </div>
-
-                <div class="number-control">
-                    <label class="control-label">👧 子供 (小学生)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('children', -1)">−</button>
-                        <span id="display-children" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('children', 1)">+</button>
-                    </div>
-                </div>
-
-                <div class="number-control">
-                    <label class="control-label">👶 幼児 (未就学児)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('infants', -1)">−</button>
-                        <span id="display-infants" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('infants', 1)">+</button>
-                    </div>
-                </div>
-
-                <label class="control-label">🪑 座席のご希望</label>
-                <div class="seat-buttons">
-                    <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                    <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                    <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                    <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
-                </div>
-                
-                <button id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定</button>
-            </div>
-
-            <div id="ticketArea" class="form-box ticket-area" style="display:none;">
-                <p class="success-message">✅ 受付完了しました</p>
-                <div id="num" class="complete-id">--</div>
-                <div id="waitTimeInfo" style="text-align:center; color:#3498db; font-size:1.2em; font-weight:bold; margin:10px 0;"></div>
-                <div class="warning-box">
-                    📸 この番号を<br>スクリーンショットで<br>保存してください
-                </div>
-                <div style="text-align:center; color:#666; font-size:0.9em; margin:15px 0;">
-                    順番が近づきましたら<br>お呼び出しいたします<br><br>
-                    <strong style="color:#8b0000;">店舗到着時は、店舗タブレットで<br>この番号をタップしてください</strong>
-                </div>
-                <button class="btn-submit" onclick="closeTicket()" style="background:#666; margin-top:15px;">閉じる</button>
-            </div>
+    <header><h1>🏮 松乃木飯店 ネット受付</h1></header>
+    <div class="container">
+        <div id="formArea" class="box">
+            <label>📝 お名前 (任意)</label>
+            <input type="text" id="name" placeholder="お名前">
+            <label>⏰ 到着予定時刻</label>
+            <input type="time" id="targetTime">
+            <label>👨‍👩‍👧‍👦 大人人数</label>
+            <input type="number" id="adults" value="2" min="1">
+            <label>🪑 座席の希望</label>
+            <select id="pref">
+                <option>どこでも</option>
+                <option>テーブル</option>
+                <option>座敷</option>
+            </select>
+            <button class="btn" onclick="send()">順番待ちを申し込む</button>
         </div>
-        
-        <div class="right-panel">
-            <div class="queue-header">
-                <h2>📋 現在の待ち状況</h2>
-                <div class="queue-count">
-                    <span class="num" id="count">0</span> 組のお客様がお待ちです
-                </div>
+
+        <div id="ticketArea" class="box" style="display:none;">
+            <h2 id="ticketTitle" style="text-align:center; color:#27ae60;">受付完了</h2>
+            <div id="myId" style="font-size:4.5em; font-weight:bold; text-align:center; color:#8b0000; margin: 10px 0;">--</div>
+            
+            <div id="ticketNotice" class="notice">
+                <b style="color:red; font-size:1.2em;">⚠️ ご来店時のお願い</b><br>
+                店舗に到着したら、入り口のタブレットで<br><b>この番号をタップ</b>してください。
             </div>
-            <div id="queueList" class="grid-container"></div>
+
+            <button id="enableSoundBtn" class="btn" style="background:#f39c12; margin-top:20px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="enableSound()">
+                🔔 ここをタップして呼出音を有効にする
+            </button>
         </div>
+
+        <h3 style="margin-top:30px; text-align:center;">📋 現在の待ち状況</h3>
+        <div id="queueList" class="queue-grid"></div>
     </div>
 
     <script>
         const socket = io();
-        const type = new URLSearchParams(window.location.search).get('type') || 'web';
-        
-        let nums = { adults: 2, children: 0, infants: 0 };
-        let isAccepting = true;
-        let myNumber = null; // 自分の受付番号
-        let selectedSeat = 'どこでも';
+        let myDisplayId = null;
+        let soundEnabled = false;
 
-        // localStorageから自分の番号を復元
-        function loadMyNumber() {
-            const saved = localStorage.getItem('myQueueNumber');
-            const savedDate = localStorage.getItem('myQueueDate');
-            const today = new Date().toDateString();
+        // スマホの音声制限を解除する
+        function enableSound() {
+            soundEnabled = true;
+            document.getElementById('enableSoundBtn').style.display = 'none';
+            document.getElementById('ticketTitle').innerText = '✅ 音声通知 ON（待機中...）';
             
-            // 同じ日付の番号なら復元
-            if (saved && savedDate === today) {
-                myNumber = saved;
-                console.log('復元された番号:', myNumber);
-            } else {
-                // 日付が違う場合はクリア
-                localStorage.removeItem('myQueueNumber');
-                localStorage.removeItem('myQueueDate');
-            }
+            // 無音のダミー音声を再生して、ブラウザに「音を鳴らす許可」をもらう
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop();
         }
 
-        // 自分の番号を保存
-        function saveMyNumber(number) {
-            myNumber = number;
-            localStorage.setItem('myQueueNumber', number);
-            localStorage.setItem('myQueueDate', new Date().toDateString());
-        }
-
-        function updateDisplays() {
-            document.getElementById('display-adults').innerText = nums.adults;
-            document.getElementById('display-children').innerText = nums.children;
-            document.getElementById('display-infants').innerText = nums.infants;
-        }
-
-        function changeNum(key, step) {
-            nums[key] = Math.max(0, nums[key] + step);
-            if(key === 'adults' && nums.adults < 1) nums.adults = 1;
-            updateDisplays();
-        }
-
-        function setNum(key, val) {
-            nums[key] = val;
-            updateDisplays();
-        }
-
-        function selectSeat(seat) {
-            selectedSeat = seat;
-            document.querySelectorAll('.btn-seat').forEach(btn => {
-                btn.classList.remove('selected');
-                if (btn.textContent === seat) {
-                    btn.classList.add('selected');
-                }
-            });
-        }
-
-        socket.on('init', d => {
-            isAccepting = d.isAccepting;
-            updateAcceptanceUI();
-            updateQueue(d);
-        });
-
-        socket.on('update', d => updateQueue(d));
-
-        function updateQueue(d) {
-            document.getElementById('count').innerText = d.queue.length;
-            const list = document.getElementById('queueList');
-            
-            if (d.queue.length === 0) {
-                list.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#999; font-size:1.1em;">現在お待ちのお客様はいません</div>';
-            } else {
-                list.innerHTML = d.queue.map(g => {
-                    let statusBadge = '';
-                    let cardClass = '';
-                    if (g.arrived) {
-                        statusBadge = '<div class="queue-status" style="background:#27ae60;color:white;">✅ 到着済み</div>';
-                        cardClass = 'arrived';
-                    } else if (g.called) {
-                        statusBadge = '<div class="queue-status" style="background:#e67e22;color:white;">📢 呼び出し中</div>';
-                        cardClass = 'called';
-                    }
-                    
-                    // 自分の番号を強調
-                    if (g.displayId === myNumber) {
-                        cardClass += ' my-number';
-                    }
-                    
-                    // 待ち時間目安を表示（nullでない場合）
-                    let waitTimeInfo = '';
-                    if (g.estimatedWait && g.estimatedWait > 0) {
-                        waitTimeInfo = `<div class="estimated-wait">⏱️ 約${g.estimatedWait}分</div>`;
-                    }
-                    
-                    return `
-                        <div class="queue-card ${cardClass}">
-                            <span class="queue-id">${g.displayId}</span>
-                            <div class="queue-info">
-                                👥 ${g.adults}名 / ${g.children}名 / ${g.infants}名<br>
-                                🪑 ${g.pref}
-                                ${waitTimeInfo}
-                                ${statusBadge}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        socket.on('statusChange', s => { 
-            isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
-            updateAcceptanceUI();
-        });
-
-        // 呼び出し通知（長い音）
-        socket.on('guestCalled', data => {
-            if (data.displayId === myNumber && data.type === 'web') {
-                showCallNotification();
-            }
-        });
-
-        socket.on('dailyReset', () => {
-            alert('🔄 日次リセットが実行されました。システムが更新されます。');
-            localStorage.removeItem('myQueueNumber');
-            localStorage.removeItem('myQueueDate');
-            myNumber = null;
-            location.reload();
-        });
-
-        function showCallNotification() {
-            const notification = document.getElementById('callNotification');
-            notification.style.display = 'block';
-            
-            // 長い音を鳴らす（連続5回、各1秒）
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => playCallSound(), i * 1500);
-            }
-            
-            // バイブレーション
-            if (navigator.vibrate) {
-                navigator.vibrate([1000, 300, 1000, 300, 1000, 300, 1000, 300, 1000]);
-            }
-            
-            // 20秒後に非表示
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 20000);
-        }
-
-        function playCallSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 880; // A5音
-            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.0);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 1.0);
-        }
-
-        function updateAcceptanceUI() {
-            const btn = document.getElementById('regBtn');
-            const msg = document.getElementById('stopMessage');
-            
-            btn.disabled = !isAccepting;
-            btn.innerText = isAccepting ? "✓ 受付確定" : "⏸️ 受付停止中";
-            msg.style.display = isAccepting ? 'none' : 'block';
-        }
-
+        // 予約送信
         function send() {
-            if (!isAccepting) {
-                alert('申し訳ございません。現在受付を停止しております。');
-                return;
-            }
-            
-            const name = document.getElementById('nameInput').value.trim();
-            socket.emit('register', { type, ...nums, pref: selectedSeat, name });
+            const data = { 
+                type: 'web', 
+                name: document.getElementById('name').value,
+                targetTime: document.getElementById('targetTime').value || '今すぐ',
+                adults: document.getElementById('adults').value,
+                pref: document.getElementById('pref').value || 'どこでも'
+            };
+            socket.emit('register', data);
         }
 
-        function closeTicket() {
-            document.getElementById('ticketArea').style.display='none';
-            document.getElementById('formArea').style.display='block';
-            nums = { adults: 2, children: 0, infants: 0 };
-            selectedSeat = 'どこでも';
-            document.getElementById('nameInput').value = '';
-            updateDisplays();
-            selectSeat('どこでも');
-        }
-
+        // 登録完了
         socket.on('registered', g => {
-            document.getElementById('formArea').style.display='none';
-            document.getElementById('ticketArea').style.display='block';
-            document.getElementById('num').innerText = g.displayId;
+            myDisplayId = g.displayId;
+            document.getElementById('formArea').style.display = 'none';
+            document.getElementById('ticketArea').style.display = 'block';
+            document.getElementById('myId').innerText = g.displayId;
+        });
+
+        // 全体のリスト更新
+        socket.on('update', d => {
+            document.getElementById('queueList').innerHTML = d.queue.map(g => `
+                <div class="q-card" style="${g.called ? 'background:#fff0f0; border-color:#e74c3c;' : ''}">
+                    <b style="color:#8b0000; font-size:1.2em;">${g.displayId}</b><br>
+                    <small>${g.targetTime}</small><br>
+                    ${g.called ? '<span style="color:red; font-weight:bold; font-size:0.9em;">📢呼出中</span>' : ''}
+                </div>
+            `).join('');
             
-            // 待ち時間目安を表示
-            const waitTimeInfo = document.getElementById('waitTimeInfo');
-            if (g.estimatedWait && g.estimatedWait > 0) {
-                waitTimeInfo.innerHTML = `⏱️ 待ち時間目安: 約${g.estimatedWait}分<br><span style="font-size:0.8em; color:#999;">※混雑状況により前後します</span>`;
-            } else {
-                waitTimeInfo.innerHTML = '';
+            // スマホがスリープから復帰した時などに、自分が呼ばれていたら画面を赤くする
+            const myGuest = d.queue.find(g => g.displayId === myDisplayId);
+            if (myGuest && myGuest.called) {
+                showCalledScreen(myGuest);
             }
+        });
+
+        // 📢 管理画面から「呼出」された時の処理
+        socket.on('called', g => {
+            if (g.displayId === myDisplayId) {
+                showCalledScreen(g);
+                playCallSound(g);
+            }
+        });
+
+        // 画面を「呼出中」の赤い点滅に変更
+        function showCalledScreen(g) {
+            const ticketArea = document.getElementById('ticketArea');
+            ticketArea.className = 'box calling-box'; // 赤く点滅するクラスを追加
             
-            saveMyNumber(g.displayId);
-        });
+            document.getElementById('ticketTitle').innerText = '📢 お呼び出し中';
+            document.getElementById('ticketTitle').style.color = '#e74c3c';
+            document.getElementById('ticketTitle').style.fontSize = '2.2em';
+            
+            document.getElementById('ticketNotice').innerHTML = `
+                <b style="color:red; font-size:1.6em;">お客様の順番になりました！</b><br><br>
+                <span style="font-size:1.2em; font-weight:bold;">店舗スタッフにお声がけください。</span>
+            `;
+            document.getElementById('enableSoundBtn').style.display = 'none';
+        }
 
-        socket.on('error', err => {
-            alert('エラー: ' + err.message);
-        });
+        // チャイムと音声の再生
+        function playCallSound(g) {
+            if (!soundEnabled) return;
+            
+            // 1. まず「ピロリロン♪」というチャイムを鳴らす
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioContext.currentTime); // ラ
+            osc.frequency.setValueAtTime(1108.73, audioContext.currentTime + 0.2); // ド#
+            osc.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.4); // ミ
+            
+            gain.gain.setValueAtTime(0, audioContext.currentTime);
+            gain.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
+            
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 1.5);
 
-        // ページ読み込み時に自分の番号を復元
-        window.addEventListener('load', () => {
-            loadMyNumber();
-        });
+            // 2. チャイムの直後に「〇番のお客様〜」と音声読み上げ
+            setTimeout(() => {
+                if (window.speechSynthesis) {
+                    const text = `${g.displayId.replace('-', '番')}のお客様、お待たせいたしました。順番になりましたので、スタッフにお声がけください。`;
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ja-JP';
+                    utterance.rate = 0.9;
+                    window.speechSynthesis.speak(utterance);
+                }
+            }, 1200);
+        }
     </script>
 </body>
 </html>
