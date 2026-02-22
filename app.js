@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const axios = require('axios'); // LINE送信に必要
+const axios = require('axios'); 
 const fs = require('fs');
 const iconv = require('iconv-lite');
 
@@ -14,7 +14,7 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// ⚙️ 環境設定 (RenderのEnvironment Variablesから取得)
+// ⚙️ 環境設定
 const LINE_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten.yoyaku@gmail.com';
 const BREVO_USER = process.env.BREVO_USER;
@@ -46,48 +46,37 @@ function saveData() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// 🏮 LINE Messaging API 通知 (Broadcast)
+// 🏮 LINE通知
 async function sendLineNotification(messageText) {
-    if (!LINE_ACCESS_TOKEN) {
-        console.warn("⚠️ LINEアクセストークンが設定されていないため、通知をスキップします");
-        return;
-    }
+    if (!LINE_ACCESS_TOKEN) return;
     try {
         await axios.post('https://api.line.me/v2/bot/message/broadcast', 
         { messages: [{ type: 'text', text: messageText }] },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_ACCESS_TOKEN}` } }
         );
         console.log("✅ LINE通知を送信しました");
-    } catch (e) {
-        console.error("❌ LINE送信失敗:", e.response ? e.response.data : e.message);
-    }
+    } catch (e) { console.error("❌ LINE送信失敗:", e.response ? e.response.data : e.message); }
 }
 
-// 📧 メールバックアップ通知 (Brevo / Gmail)
+// 📧 メールバックアップ通知
 async function sendEmailBackup(subject, text) {
     const mailOptions = { from: SHOP_EMAIL, to: SHOP_EMAIL, subject, text };
-    
-    // まず Brevo
     if (BREVO_USER && BREVO_PASS) {
         try {
             const transport = nodemailer.createTransport({ host: 'smtp-relay.brevo.com', port: 587, auth: { user: BREVO_USER, pass: BREVO_PASS } });
             await transport.sendMail(mailOptions);
-            console.log("✅ Email (Brevo) 送信成功");
             return;
         } catch (e) { console.warn("⚠️ Brevoメール失敗:", e.message); }
     }
-    
-    // ダメなら Gmail
     if (GMAIL_USER && GMAIL_APP_PASS) {
         try {
             const transport = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS } });
             await transport.sendMail(mailOptions);
-            console.log("✅ Email (Gmail) 送信成功");
         } catch (e) { console.error("❌ 全てのメール送信が失敗しました"); }
     }
 }
 
-// 🖨 プリンター制御 (Shift_JISバイナリ)
+// 🖨 プリンター制御
 function printTicket(guest) {
     if (!printerEnabled) return;
     try {
@@ -103,7 +92,6 @@ function printTicket(guest) {
     } catch (e) { console.error("印刷エラー:", e); }
 }
 
-// Star CloudPRNT API
 app.post('/cloudprnt', (req, res) => res.json({ jobReady: fs.existsSync(PRINT_JOB_FILE), mediaTypes: ["application/vnd.star.starprnt"] }));
 app.get('/cloudprnt', (req, res) => {
     if (fs.existsSync(PRINT_JOB_FILE)) {
@@ -126,16 +114,15 @@ io.on('connection', (socket) => {
             targetTime: data.targetTime || '今すぐ', 
             timestamp: Date.now(), 
             time: new Date().toLocaleTimeString('ja-JP'),
-            arrived: data.type === 'shop' // 店舗受付は最初から到着済
+            arrived: data.type === 'shop',
+            called: false
         };
         queue.push(newGuest);
         stats.totalToday++;
         saveData();
 
-        // 🖨 店舗受付なら即印刷
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
         
-        // 🏮 ネット予約ならLINEとメールで通知
         const msg = `【松乃木飯店 予約】\n番号：${newGuest.displayId}\n到着：${newGuest.targetTime}\n人数：${data.adults}名\n名前：${data.name || 'なし'}様`;
         sendLineNotification(msg);
         sendEmailBackup(`新規受付 ${newGuest.displayId}`, msg);
@@ -159,6 +146,17 @@ io.on('connection', (socket) => {
             guest.arrived = true; 
             saveData(); 
             io.emit('update', { queue, stats }); 
+        }
+    });
+
+    // 📢 【今回追加】お客さんのスマホへ呼出を転送する
+    socket.on('callGuest', ({ displayId }) => {
+        const guest = queue.find(g => g.displayId === displayId);
+        if (guest) {
+            guest.called = true; // 呼出済みにする
+            saveData();
+            io.emit('update', { queue, stats });
+            io.emit('called', guest); // お客さんのスマホへ「呼ばれたよ」と送る
         }
     });
 
