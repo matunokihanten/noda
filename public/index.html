@@ -198,6 +198,9 @@
                     順番が近づきましたら<br>お呼び出しいたします<br><br>
                     <strong style="color:#8b0000;">店舗到着時は、店舗タブレットで<br>この番号をタップしてください</strong>
                 </div>
+
+                <button id="cancelBtn" class="btn-submit" style="background:#e74c3c; margin-top:10px;" onclick="cancelMyReservation()">✖ 予約をキャンセルする</button>
+
                 <button class="btn-submit" onclick="closeTicket()" style="background:#666; margin-top:15px;">受付画面に戻る</button>
             </div>
         </div>
@@ -225,7 +228,7 @@
         // 音声の許可状態
         let soundEnabled = false;
 
-        // 🌟 追加：スマホの制限を解除し、音声を許可する処理
+        // スマホの制限を解除し、音声を許可する処理
         function enableSound() {
             soundEnabled = true;
             document.getElementById('enableSoundBtn').style.display = 'none';
@@ -361,7 +364,7 @@
             location.reload();
         });
 
-        // 🌟 呼び出しポップアップ表示
+        // 呼び出しポップアップ表示
         function showCallNotification() {
             const notification = document.getElementById('callNotification');
             notification.style.display = 'block';
@@ -377,7 +380,7 @@
             document.getElementById('callNotification').style.display = 'none';
         }
 
-        // 🌟 チャイム音 ＋ 音声合成の再生
+        // チャイム音 ＋ 音声合成の再生
         function playCallSound() {
             if (!soundEnabled) return; // ユーザーがボタンを押していなければ鳴らない
             
@@ -430,6 +433,24 @@
             }
             const name = document.getElementById('nameInput').value.trim();
             socket.emit('register', { type, ...nums, pref: selectedSeat, name });
+        }
+
+        // 🌟 追加: キャンセル機能
+        function cancelMyReservation() {
+            if (!myNumber) return;
+            
+            if (confirm('順番待ちをキャンセルしてもよろしいですか？\n※この操作は取り消せません。')) {
+                socket.emit('cancelReservation', { displayId: myNumber });
+                
+                // ローカルの保存情報を消去
+                localStorage.removeItem('myQueueNumber');
+                localStorage.removeItem('myQueueDate');
+                myNumber = null;
+                
+                // 画面をリセット
+                alert('キャンセルが完了しました。');
+                closeTicket();
+            }
         }
 
         function closeTicket() {
