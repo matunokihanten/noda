@@ -132,6 +132,12 @@
         <h2>⚙️ システム設定</h2>
         
         <div class="setting-control">
+            <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()">
+            <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
+            <span class="setting-status status-off" id="notificationSoundStatus">OFF</span>
+        </div>
+
+        <div class="setting-control">
             <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
             <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
             <span class="setting-status status-off" id="voiceStatus">OFF</span>
@@ -176,8 +182,12 @@
         const socket = io();
         let voiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
         let printerEnabled = true;
-        // ★ 初期値の待ち時間目安を非表示にする
         let waitTimeDisplayEnabled = false; 
+        
+        // 新規追加：通知音の変数
+        let notificationSoundEnabled = false;
+        let lastQueueLength = 0;
+        let isFirstLoad = true;
         
         // 時計更新
         function updateClock() {
@@ -192,6 +202,20 @@
         // 設定の復元
         document.getElementById('voiceEnabled').checked = voiceEnabled;
         updateVoiceStatus();
+
+        // 新規追加：通知音のトグル関数
+        function toggleNotificationSound() {
+            notificationSoundEnabled = document.getElementById('notificationSoundEnabled').checked;
+            const status = document.getElementById('notificationSoundStatus');
+            if (notificationSoundEnabled) {
+                status.textContent = 'ON';
+                status.className = 'setting-status status-on';
+                playSound('new_reservation'); // テスト再生＆ブラウザの音声再生許可を取得
+            } else {
+                status.textContent = 'OFF';
+                status.className = 'setting-status status-off';
+            }
+        }
 
         function updateVoiceStatus() {
             const status = document.getElementById('voiceStatus');
@@ -278,7 +302,7 @@
             return `${hours}時間${mins}分`;
         }
 
-        // UI更新 (カード型グリッドに変更)
+        // UI更新
         function updateUI(d) {
             const stats = d.stats || {};
             document.getElementById('queueCount').innerText = d.queue ? d.queue.length : 0;
@@ -324,7 +348,6 @@
                     }
                     actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
                     
-                    // 待ち時間目安の表示制御
                     let waitTimeHtml = '';
                     if (waitTimeDisplayEnabled && g.estimatedWait) {
                         waitTimeHtml = `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>`;
@@ -354,7 +377,6 @@
             }
         }
 
-        // ステータス変更
         socket.on('statusChange', s => {
             const isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             const label = document.getElementById('statusLabel');
@@ -371,7 +393,11 @@
         });
 
         socket.on('init', d => {
-            // ★ 管理画面を新規で開いた時、自動でサーバーの待ち時間表示をOFFに同期させる
+            if (d.queue) {
+                lastQueueLength = d.queue.length;
+                isFirstLoad = false;
+            }
+
             if (!sessionStorage.getItem('wait_time_initialized')) {
                 socket.emit('setWaitTimeDisplay', { enabled: false });
                 waitTimeDisplayEnabled = false;
@@ -400,7 +426,17 @@
             }
         });
         
-        socket.on('update', d => updateUI(d));
+        // 変更箇所：アップデート時に予約増加を検知して音を鳴らす
+        socket.on('update', d => {
+            if (d.queue) {
+                if (!isFirstLoad && notificationSoundEnabled && d.queue.length > lastQueueLength) {
+                    playSound('new_reservation');
+                }
+                lastQueueLength = d.queue.length;
+                isFirstLoad = false;
+            }
+            updateUI(d);
+        });
 
         socket.on('printerStatusChanged', data => {
             printerEnabled = data.printerEnabled;
@@ -484,7 +520,7 @@
             }
         }
 
-        // サウンド再生
+        // サウンド再生（新規予約用の音を追加）
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
@@ -504,6 +540,20 @@
                 gainNode.gain.value = 0.2;
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.15);
+            } else if (type === 'new_reservation') {
+                // 新規追加：「ピロン♪」という明るい通知音
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime); // C6
+                oscillator.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.15); // E6
+
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.2);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
             }
         }
 
