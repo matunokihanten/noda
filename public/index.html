@@ -186,10 +186,6 @@
                 <p class="success-message" id="ticketTitle">✅ 受付完了しました</p>
                 <div id="num" class="complete-id">--</div>
 
-                <button id="enableSoundBtn" class="btn-submit" style="background:#f39c12; margin:15px 0; font-size:1.1em; padding:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="enableSound()">
-                    🔔 ここをタップして呼出音を有効にする
-                </button>
-
                 <div id="waitTimeInfo" style="text-align:center; color:#3498db; font-size:1.2em; font-weight:bold; margin:10px 0;"></div>
                 <div class="warning-box">
                     📸 この番号を<br>スクリーンショットで<br>保存してください
@@ -227,26 +223,6 @@
         
         // 音声の許可状態
         let soundEnabled = false;
-
-        // スマホの制限を解除し、音声を許可する処理
-        function enableSound() {
-            soundEnabled = true;
-            document.getElementById('enableSoundBtn').style.display = 'none';
-            document.getElementById('ticketTitle').innerText = '✅ 音声通知 ON（待機中...）';
-            
-            // 無音のダミー音声を再生して「ブラウザに音を鳴らす許可」をもらう
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            osc.connect(ctx.destination);
-            osc.start();
-            osc.stop();
-
-            // 音声合成の許可をもらう
-            if (window.speechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance('');
-                window.speechSynthesis.speak(utterance);
-            }
-        }
 
         function loadMyNumber() {
             const saved = localStorage.getItem('myQueueNumber');
@@ -382,7 +358,7 @@
 
         // チャイム音 ＋ 音声合成の再生
         function playCallSound() {
-            if (!soundEnabled) return; // ユーザーがボタンを押していなければ鳴らない
+            if (!soundEnabled) return; 
             
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
@@ -431,11 +407,29 @@
                 alert('申し訳ございません。現在受付を停止しております。');
                 return;
             }
+            
+            // 🌟 追加: 「受付確定」ボタンを押したタイミングで音声再生の許可をブラウザから得る
+            soundEnabled = true;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop();
+            } catch (e) {
+                console.error("Audio initialization failed:", e);
+            }
+
+            if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(utterance);
+            }
+            
             const name = document.getElementById('nameInput').value.trim();
             socket.emit('register', { type, ...nums, pref: selectedSeat, name });
         }
 
-        // 🌟 追加: キャンセル機能
+        // キャンセル機能
         function cancelMyReservation() {
             if (!myNumber) return;
             
@@ -460,8 +454,6 @@
             selectedSeat = 'どこでも';
             document.getElementById('nameInput').value = '';
             
-            // ボタンを復活させて初期状態に戻す
-            document.getElementById('enableSoundBtn').style.display = 'block';
             document.getElementById('ticketTitle').innerText = '✅ 受付完了しました';
             soundEnabled = false;
 
