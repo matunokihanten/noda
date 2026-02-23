@@ -142,9 +142,9 @@
         <div id="settingsContent">
             
             <div class="setting-control">
-                <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()">
+                <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()" checked>
                 <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
-                <span class="setting-status status-off" id="notificationSoundStatus">OFF</span>
+                <span class="setting-status status-on" id="notificationSoundStatus">ON</span>
             </div>
 
             <div class="setting-control" style="background: #fff3e0;">
@@ -207,8 +207,8 @@
         let printerEnabled = true;
         let waitTimeDisplayEnabled = false; 
         
-        // ★ 通知音用の変数
-        let notificationSoundEnabled = false;
+        // ★ 修正: 初期値を true に変更
+        let notificationSoundEnabled = true;
         let lastQueueLength = 0;
         let isFirstLoad = true;
         let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
