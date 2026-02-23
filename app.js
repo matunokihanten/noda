@@ -94,7 +94,11 @@ function printTicket(guest) {
         const expandCmd = Buffer.from([0x1b, 0x69, 0x01, 0x01]); 
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
-        const footerText = `日時：${new Date().toLocaleString('ja-JP')}\n到着予定：${guest.targetTime || '今すぐ'}\n人数：${guest.adults}名\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
+        
+        // 🌟 修正：日本時間を指定
+        const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        const footerText = `日時：${nowJst}\n到着予定：${guest.targetTime || '今すぐ'}\n人数：${guest.adults}名\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
+        
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
         const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
         fs.writeFileSync(PRINT_JOB_FILE, Buffer.concat([initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd]));
@@ -129,7 +133,8 @@ io.on('connection', (socket) => {
             displayId: `${prefix}-${nextNumber++}`, 
             ...data, 
             timestamp: Date.now(), 
-            time: new Date().toLocaleTimeString('ja-JP'),
+            // 🌟 修正：日本時間を指定
+            time: new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' }),
             arrived: data.type === 'shop',
             called: false,
             absent: false,
