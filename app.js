@@ -25,10 +25,10 @@ const GMAIL_APP_PASS = (process.env.GMAIL_APP_PASS || '').replace(/\s+/g, '');
 const DATA_FILE = path.join(__dirname, 'queue-data.json');
 const PRINT_JOB_FILE = path.join(__dirname, 'print_job.bin');
 
-// システムの状態変数
+// システムの状態変数 (統計項目を追加)
 let queue = [];
 let nextNumber = 1;
-let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0 };
+let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
 let printerEnabled = true;
 let isAccepting = true;
 let waitTimeDisplayEnabled = false;
@@ -45,6 +45,10 @@ if (fs.existsSync(DATA_FILE)) {
         queue = data.queue || [];
         nextNumber = data.nextNumber || 1;
         stats = data.stats || stats;
+        // 旧データからの移行対応
+        if (stats.totalWebToday === undefined) stats.totalWebToday = 0;
+        if (stats.totalShopToday === undefined) stats.totalShopToday = 0;
+        
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
         isAccepting = data.isAccepting !== undefined ? data.isAccepting : true;
         waitTimeDisplayEnabled = data.waitTimeDisplayEnabled !== undefined ? data.waitTimeDisplayEnabled : false;
@@ -94,11 +98,8 @@ function printTicket(guest) {
         const expandCmd = Buffer.from([0x1b, 0x69, 0x01, 0x01]); 
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
-        
-        // 🌟 修正：日本時間を指定
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
         const footerText = `日時：${nowJst}\n到着予定：${guest.targetTime || '今すぐ'}\n人数：${guest.adults}名\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
-        
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
         const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
         fs.writeFileSync(PRINT_JOB_FILE, Buffer.concat([initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd]));
@@ -133,7 +134,6 @@ io.on('connection', (socket) => {
             displayId: `${prefix}-${nextNumber++}`, 
             ...data, 
             timestamp: Date.now(), 
-            // 🌟 修正：日本時間を指定
             time: new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' }),
             arrived: data.type === 'shop',
             called: false,
@@ -141,7 +141,15 @@ io.on('connection', (socket) => {
             estimatedWait: estimatedWait
         };
         queue.push(newGuest);
+        
+        // 統計の更新
         stats.totalToday++;
+        if (data.type === 'shop') {
+            stats.totalShopToday++;
+        } else {
+            stats.totalWebToday++;
+        }
+        
         saveData();
 
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
@@ -154,26 +162,20 @@ io.on('connection', (socket) => {
         socket.emit('registered', newGuest);
     });
 
-    // 🌟 お客さま自身によるキャンセル処理
     socket.on('cancelReservation', ({ displayId }) => {
         const guestIndex = queue.findIndex(g => g.displayId === displayId);
         if (guestIndex !== -1) {
-            const guest = queue[guestIndex];
             queue.splice(guestIndex, 1);
-            
-            // 不在タイマーがあれば解除
             if (absentTimers[displayId]) {
                 clearTimeout(absentTimers[displayId]);
                 delete absentTimers[displayId];
             }
-
             saveData();
             io.emit('update', { queue, stats });
             console.log(`🗑 キャンセル完了: ${displayId}`);
         }
     });
 
-    // 案内完了
     socket.on('updateStatus', ({ displayId, status }) => {
         if (status === 'completed') {
             const guest = queue.find(g => g.displayId === displayId);
@@ -253,7 +255,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('resetStats', () => {
-        stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0 };
+        stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
         waitTimes = [];
         saveData();
         io.emit('update', { queue, stats });
@@ -286,12 +288,12 @@ io.on('connection', (socket) => {
     });
 });
 
-// 日次リセット
+// 日次リセット (統計全項目リセット)
 setInterval(() => {
     const jstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jstNow.getHours() === 0 && jstNow.getMinutes() === 0) {
         queue = []; nextNumber = 1;
-        stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0 };
+        stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
         waitTimes = []; saveData();
         io.emit('dailyReset');
     }
