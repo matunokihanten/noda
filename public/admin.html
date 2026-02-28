@@ -13,10 +13,13 @@
         .header h1 { color: #8b0000; font-size: 1.8em; margin-bottom: 10px; }
         .header .clock { font-size: 2em; font-weight: bold; color: #333; }
         
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        /* 統計グリッドの調整 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.15); text-align: center; }
         .stat-value { font-size: 2.5em; font-weight: bold; color: #8b0000; }
         .stat-label { font-size: 0.9em; color: #666; margin-top: 5px; }
+        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; } /* ネット */
+        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; } /* 店舗 */
         
         .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .card h2 { color: #8b0000; margin-bottom: 15px; font-size: 1.4em; }
@@ -37,43 +40,25 @@
         
         /* 設定コントロール */
         .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .setting-control input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        .setting-control input[type=\"checkbox\"] { width: 20px; height: 20px; cursor: pointer; }
         .setting-control label { font-size: 1.05em; font-weight: 600; cursor: pointer; flex: 1; }
         .setting-status { font-size: 0.9em; font-weight: bold; padding: 4px 12px; border-radius: 6px; }
         .status-on { background: #27ae60; color: white; }
         .status-off { background: #e74c3c; color: white; }
         
-        /* 折りたたみ機能のスタイル */
         .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
         .collapsible-header:hover { opacity: 0.7; }
         .toggle-icon { font-size: 0.8em; transition: transform 0.3s ease; color: #666; }
         .collapsed .toggle-icon { transform: rotate(-90deg); }
         
-        /* 新しいグリッドレイアウト（6列） */
-        .admin-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
+        .admin-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-top: 15px; }
         
-        /* 画面サイズに応じた自動折り返し */
         @media (max-width: 1400px) { .admin-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 1000px) { .admin-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) { .admin-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 480px) { .admin-grid { grid-template-columns: 1fr; } }
 
-        /* カードデザイン */
-        .admin-card {
-            background: #fff;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+        .admin-card { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 15px; box-shadow: 0 3px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
         .admin-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .admin-card.arrived { border-color: #27ae60; background: #f0fdf4; }
         .admin-card.called { border-color: #e67e22; background: #fffbeb; }
@@ -88,7 +73,6 @@
         .admin-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 15px; }
         .admin-card-actions button { padding: 8px 4px; font-size: 0.85em; border-radius: 6px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        /* ボタンカラー */
         .btn-complete { background: #2ecc71; color: white; grid-column: 1 / -1; font-size: 1em !important; padding: 10px !important; }
         .btn-call { background: #e67e22; color: white; }
         .btn-recall { background: #f39c12; color: white; }
@@ -110,94 +94,97 @@
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class=\"header\">
         <h1>🏮 松乃木飯店 管理画面</h1>
-        <div class="clock" id="clock">--:--:--</div>
+        <div class=\"clock\" id=\"clock\">--:--:--</div>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-value" id="queueCount">0</div>
-            <div class="stat-label">現在待ち組数</div>
+    <div class=\"stats-grid\">
+        <div class=\"stat-card\">
+            <div class=\"stat-value\" id=\"queueCount\">0</div>
+            <div class=\"stat-label\">現在待ち組数</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-value" id="totalToday">0</div>
-            <div class="stat-label">本日受付総数</div>
+        <div class=\"stat-card\">
+            <div class=\"stat-value\" id=\"totalWebToday\">0</div>
+            <div class=\"stat-label stat-sub\">ネット受付総数</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-value" id="completedToday">0</div>
-            <div class="stat-label">本日案内完了</div>
+        <div class=\"stat-card\">
+            <div class=\"stat-value\" id=\"totalShopToday\">0</div>
+            <div class=\"stat-label stat-shop\">店舗受付総数</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-value" id="avgWait">0</div>
-            <div class="stat-label">平均待ち時間(分)</div>
+        <div class=\"stat-card\">
+            <div class=\"stat-value\" id=\"totalToday\">0</div>
+            <div class=\"stat-label\">本日受付合計</div>
+        </div>
+        <div class=\"stat-card\">
+            <div class=\"stat-value\" id=\"completedToday\">0</div>
+            <div class=\"stat-label\">本日案内完了</div>
+        </div>
+        <div class=\"stat-card\">
+            <div class=\"stat-value\" id=\"avgWait\">0</div>
+            <div class=\"stat-label\">平均待ち時間(分)</div>
         </div>
     </div>
 
-    <div class="card">
-        <h2 id="settingsHeader" class="collapsible-header" onclick="toggleSection('settingsContent', 'settingsHeader')">
+    <div class=\"card\">
+        <h2 id=\"settingsHeader\" class=\"collapsible-header\" onclick=\"toggleSection('settingsContent', 'settingsHeader')\">
             <span>⚙️ システム設定</span>
-            <span class="toggle-icon">▼</span>
+            <span class=\"toggle-icon\">▼</span>
         </h2>
-        <div id="settingsContent">
-            
-            <div class="setting-control">
-                <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()" checked>
-                <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
-                <span class="setting-status status-on" id="notificationSoundStatus">ON</span>
+        <div id=\"settingsContent\">
+            <div class=\"setting-control\">
+                <input type=\"checkbox\" id=\"notificationSoundEnabled\" onchange=\"toggleNotificationSound()\" checked>
+                <label for=\"notificationSoundEnabled\">🔔 新規予約の受信時に音を鳴らす</label>
+                <span class=\"setting-status status-on\" id=\"notificationSoundStatus\">ON</span>
             </div>
-
-            <div class="setting-control" style="background: #fff3e0;">
-                <div style="flex:1; display:flex; align-items:center;">
-                    <label for="soundDuration" style="margin-right:15px; flex: none;">⏱️ 通知音の長さ:</label>
-                    <input type="range" id="soundDuration" min="1" max="10" value="3" oninput="updateSoundDurationLabel()" onchange="updateSoundDuration()" style="flex:1; cursor: pointer;">
+            <div class=\"setting-control\" style=\"background: #fff3e0;\">
+                <div style=\"flex:1; display:flex; align-items:center;\">
+                    <label for=\"soundDuration\" style=\"margin-right:15px; flex: none;\">⏱️ 通知音の長さ:</label>
+                    <input type=\"range\" id=\"soundDuration\" min=\"1\" max=\"10\" value=\"3\" oninput=\"updateSoundDurationLabel()\" onchange=\"updateSoundDuration()\" style=\"flex:1; cursor: pointer;\">
                 </div>
-                <span class="setting-status" id="soundDurationLabel" style="background:#e67e22; color:white; min-width: 60px; text-align:center;">3秒</span>
+                <span class=\"setting-status\" id=\"soundDurationLabel\" style=\"background:#e67e22; color:white; min-width: 60px; text-align:center;\">3秒</span>
             </div>
-
-            <div class="setting-control">
-                <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
-                <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
-                <span class="setting-status status-off" id="voiceStatus">OFF</span>
+            <div class=\"setting-control\">
+                <input type=\"checkbox\" id=\"voiceEnabled\" onchange=\"toggleVoice()\">
+                <label for=\"voiceEnabled\">🔊 受付番号を音声で読み上げる</label>
+                <span class=\"setting-status status-off\" id=\"voiceStatus\">OFF</span>
             </div>
-            
-            <div class="setting-control">
-                <input type="checkbox" id="printerEnabled" onchange="togglePrinter()">
-                <label for="printerEnabled">🖨️ 店舗受付時に番号を印刷する</label>
-                <span class="setting-status status-on" id="printerStatus">ON</span>
+            <div class=\"setting-control\">
+                <input type=\"checkbox\" id=\"printerEnabled\" onchange=\"togglePrinter()\">
+                <label for=\"printerEnabled\">🖨️ 店舗受付時に番号を印刷する</label>
+                <span class=\"setting-status status-on\" id=\"printerStatus\">ON</span>
             </div>
-            
-            <div class="setting-control">
-                <input type="checkbox" id="waitTimeDisplayEnabled" onchange="toggleWaitTimeDisplay()">
-                <label for="waitTimeDisplayEnabled">⏱️ 待ち時間目安を表示する</label>
-                <span class="setting-status status-off" id="waitTimeDisplayStatus">OFF</span>
+            <div class=\"setting-control\">
+                <input type=\"checkbox\" id=\"waitTimeDisplayEnabled\" onchange=\"toggleWaitTimeDisplay()\">
+                <label for=\"waitTimeDisplayEnabled\">⏱️ 待ち時間目安を表示する</label>
+                <span class=\"setting-status status-off\" id=\"waitTimeDisplayStatus\">OFF</span>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <h2 id="controlsHeader" class="collapsible-header" onclick="toggleSection('controlsContent', 'controlsHeader')">
+    <div class=\"card\">
+        <h2 id=\"controlsHeader\" class=\"collapsible-header\" onclick=\"toggleSection('controlsContent', 'controlsHeader')\">
             <span>📋 受付コントロール</span>
-            <span class="toggle-icon">▼</span>
+            <span class=\"toggle-icon\">▼</span>
         </h2>
-        <div id="controlsContent">
-            <div id="statusLabel" class="status-accepting">状態確認中...</div>
-            <div class="controls">
+        <div id=\"controlsContent\">
+            <div id=\"statusLabel\" class=\"status-accepting\">状態確認中...</div>
+            <div class=\"controls\">
                 <label>停止時間設定：</label>
-                <button class="btn-stop" onclick="setAccept(false, 0)">今すぐ停止</button>
-                <button class="btn-stop" onclick="setAccept(false, 30)">30分停止</button>
-                <button class="btn-stop" onclick="setAccept(false, 60)">60分停止</button>
-                <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
-                <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
-                <button class="btn-danger" onclick="resetQueueNumber()">🔄 番号を1にリセット</button>
+                <button class=\"btn-stop\" onclick=\"setAccept(false, 0)\">今すぐ停止</button>
+                <button class=\"btn-stop\" onclick=\"setAccept(false, 30)\">30分停止</button>
+                <button class=\"btn-stop\" onclick=\"setAccept(false, 60)\">60分停止</button>
+                <button class=\"btn-start\" onclick=\"setAccept(true, 0)\">▶ 受付再開</button>
+                <button class=\"btn-reset\" onclick=\"resetStats()\">📊 統計リセット</button>
+                <button class=\"btn-danger\" onclick=\"resetQueueNumber()\">🔄 番号を1にリセット</button>
             </div>
         </div>
     </div>
 
-    <div class="card">
+    <div class=\"card\">
         <h2>👥 待ち状況一覧</h2>
-        <div id="list" class="admin-grid">
-            <div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>
+        <div id=\"list\" class=\"admin-grid\">
+            <div class=\"no-data\" style=\"grid-column: 1 / -1;\">待ち客はいません</div>
         </div>
     </div>
 
@@ -206,14 +193,14 @@
         let voiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
         let printerEnabled = true;
         let waitTimeDisplayEnabled = false; 
-        
-        // ★ 修正: 初期値を true に変更
         let notificationSoundEnabled = true;
         let lastQueueLength = 0;
         let isFirstLoad = true;
         let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
         
-        // 時計更新
+        // ★ 修正点: MP3再生用のグローバル変数
+        let currentNotificationAudio = null;
+
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString('ja-JP', {
@@ -223,7 +210,6 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 💡 折りたたみ開閉の実行関数
         function toggleSection(contentId, headerId) {
             const content = document.getElementById(contentId);
             const header = document.getElementById(headerId);
@@ -236,82 +222,52 @@
             }
         }
 
-        // ページ読み込み時の設定復元
         document.getElementById('voiceEnabled').checked = voiceEnabled;
         updateVoiceStatus();
         document.getElementById('soundDuration').value = soundDuration;
         updateSoundDurationLabel();
 
-        // ★ 通知音のON/OFF切り替え
         function toggleNotificationSound() {
             notificationSoundEnabled = document.getElementById('notificationSoundEnabled').checked;
             const status = document.getElementById('notificationSoundStatus');
             if (notificationSoundEnabled) {
-                status.textContent = 'ON';
-                status.className = 'setting-status status-on';
-                playSound('new_reservation'); // テスト再生
+                status.textContent = 'ON'; status.className = 'setting-status status-on';
+                playSound('new_reservation');
             } else {
-                status.textContent = 'OFF';
-                status.className = 'setting-status status-off';
+                status.textContent = 'OFF'; status.className = 'setting-status status-off';
+                if(currentNotificationAudio) currentNotificationAudio.pause();
             }
         }
 
-        // ★ 通知音の長さ（ラベル表示のみ更新）
         function updateSoundDurationLabel() {
             document.getElementById('soundDurationLabel').innerText = document.getElementById('soundDuration').value + '秒';
         }
 
-        // ★ 通知音の長さ（保存とテスト再生）
         function updateSoundDuration() {
             soundDuration = parseInt(document.getElementById('soundDuration').value);
             localStorage.setItem('soundDuration', soundDuration);
             updateSoundDurationLabel();
-            
-            // スライダーを離した時にONになっていればテスト再生する
-            if (notificationSoundEnabled) {
-                playSound('new_reservation');
-            } else {
-                // OFFの場合はONにしてからテスト再生してあげる
-                document.getElementById('notificationSoundEnabled').checked = true;
-                toggleNotificationSound();
-            }
+            if (notificationSoundEnabled) playSound('new_reservation');
         }
 
         function updateVoiceStatus() {
             const status = document.getElementById('voiceStatus');
-            if (voiceEnabled) {
-                status.textContent = 'ON';
-                status.className = 'setting-status status-on';
-            } else {
-                status.textContent = 'OFF';
-                status.className = 'setting-status status-off';
-            }
+            status.textContent = voiceEnabled ? 'ON' : 'OFF';
+            status.className = voiceEnabled ? 'setting-status status-on' : 'setting-status status-off';
         }
 
         function updatePrinterStatus() {
-            const checkbox = document.getElementById('printerEnabled');
             const status = document.getElementById('printerStatus');
-            checkbox.checked = printerEnabled;
-            if (printerEnabled) {
-                status.textContent = 'ON';
-                status.className = 'setting-status status-on';
-            } else {
-                status.textContent = 'OFF';
-                status.className = 'setting-status status-off';
-            }
+            status.textContent = printerEnabled ? 'ON' : 'OFF';
+            status.className = printerEnabled ? 'setting-status status-on' : 'setting-status status-off';
+            document.getElementById('printerEnabled').checked = printerEnabled;
         }
 
         function updateWaitTimeDisplayStatus() {
-            const checkbox = document.getElementById('waitTimeDisplayEnabled');
             const status = document.getElementById('waitTimeDisplayStatus');
-            checkbox.checked = waitTimeDisplayEnabled;
-            if (waitTimeDisplayEnabled) {
-                status.textContent = 'ON';
-                status.className = 'setting-status status-on';
-            } else {
-                status.textContent = 'OFF';
-                status.className = 'setting-status status-off';
-            }
+            status.textContent = waitTimeDisplayEnabled ? 'ON' : 'OFF';
+            status.className = waitTimeDisplayEnabled ? 'setting-status status-on' : 'setting-status status-off';
+            document.getElementById('waitTimeDisplayEnabled').checked = waitTimeDisplayEnabled;
         }
 
         function toggleVoice() {
@@ -330,312 +286,170 @@
             socket.emit('setWaitTimeDisplay', { enabled: waitTimeDisplayEnabled });
         }
 
-        // 音声読み上げ機能
         function speakNumber(displayId, name, adults, children, infants) {
             if (!voiceEnabled || !window.speechSynthesis) return;
-            
             window.speechSynthesis.cancel();
-            
             let text = `${displayId.replace('-', '番、')}`;
             if (name) text += `、${name}様`;
             text += `、大人${adults}名`;
             if (children > 0) text += `、子供${children}名`;
             if (infants > 0) text += `、幼児${infants}名`;
             text += `、お呼び出しです。`;
-            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ja-JP';
-            utterance.rate = 0.9; 
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-            
+            utterance.lang = 'ja-JP'; utterance.rate = 0.9;
             window.speechSynthesis.speak(utterance);
         }
 
-        // 待ち時間計算
         function getWaitTime(timestamp) {
             const now = Date.now();
             const diff = Math.floor((now - timestamp) / 1000 / 60);
             if (diff < 60) return `${diff}分`;
-            const hours = Math.floor(diff / 60);
-            const mins = diff % 60;
-            return `${hours}時間${mins}分`;
+            return `${Math.floor(diff/60)}時間${diff%60}分`;
         }
 
-        // UI更新 (カード型グリッドに変更)
         function updateUI(d) {
             const stats = d.stats || {};
             document.getElementById('queueCount').innerText = d.queue ? d.queue.length : 0;
             document.getElementById('totalToday').innerText = stats.totalToday || 0;
             document.getElementById('completedToday').innerText = stats.completedToday || 0;
             document.getElementById('avgWait').innerText = stats.averageWaitTime || 0;
+            
+            // ★ 修正点: ネット・店舗別の統計表示
+            document.getElementById('totalWebToday').innerText = stats.totalWebToday || 0;
+            document.getElementById('totalShopToday').innerText = stats.totalShopToday || 0;
 
             const list = document.getElementById('list');
             if (!d.queue || d.queue.length === 0) {
-                list.innerHTML = '<div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>';
+                list.innerHTML = '<div class=\"no-data\" style=\"grid-column: 1 / -1;\">待ち客はいません</div>';
             } else {
                 list.innerHTML = d.queue.map(g => {
                     const waitTime = getWaitTime(g.timestamp);
-                    const estimatedWait = g.estimatedWait ? `約${g.estimatedWait}分` : '-';
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
-                    const nameDisplay = g.name || '名前なし';
+                    let cardClass = g.arrived ? 'arrived' : (g.called ? 'called' : (g.absent ? 'absent' : ''));
+                    let statusBadges = g.arrived ? '<span class=\"status-badge badge-arrived\">✅ 到着済み</span>' : '';
+                    if(g.called) statusBadges += '<span class=\"status-badge badge-called\">📢 呼び出し中</span>';
+                    if(g.absent) statusBadges += '<span class=\"status-badge badge-absent\">⚠️ 不在(10分後削除)</span>';
                     
-                    let cardClass = '';
-                    let statusBadges = '';
-                    let actionButtons = '';
-                    
-                    if (g.arrived) {
-                        cardClass = 'arrived';
-                        statusBadges += '<span class="status-badge badge-arrived">✅ 到着済み</span>';
-                    }
-                    if (g.called) {
-                        cardClass = 'called';
-                        statusBadges += '<span class="status-badge badge-called">📢 呼び出し中</span>';
-                    }
-                    if (g.absent) {
-                        cardClass = 'absent';
-                        statusBadges += '<span class="status-badge badge-absent">⚠️ 不在(10分後削除)</span>';
-                        actionButtons += `<button class="btn-cancel-absent" onclick="cancelAbsent('${g.displayId}')">不在解除</button>`;
-                    } else {
-                        actionButtons += `<button class="btn-absent" onclick="markAbsent('${g.displayId}')">不在</button>`;
-                    }
-                    
-                    if (!g.called) {
-                        actionButtons += `<button class="btn-call" onclick="callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">📢 呼出</button>`;
-                    } else {
-                        actionButtons += `<button class="btn-recall" onclick="recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">🔁 再呼出</button>`;
-                    }
-                    actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
-                    
-                    // 待ち時間目安の表示制御
-                    let waitTimeHtml = '';
-                    if (waitTimeDisplayEnabled && g.estimatedWait) {
-                        waitTimeHtml = `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>`;
-                    }
-                    
+                    let actionButtons = g.absent ? `<button class=\"btn-cancel-absent\" onclick=\"cancelAbsent('${g.displayId}')\">不在解除</button>` : `<button class=\"btn-absent\" onclick=\"markAbsent('${g.displayId}')\">不在</button>`;
+                    actionButtons += g.called ? `<button class=\"btn-recall\" onclick=\"recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})\">🔁 再呼出</button>` : `<button class=\"btn-call\" onclick=\"callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})\">📢 呼出</button>`;
+                    actionButtons += `<button class=\"btn-complete\" onclick=\"done('${g.displayId}')\">✓ 案内完了</button>`;
+
+                    let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class=\"estimated-wait\">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
+
                     return `
-                        <div class="admin-card ${cardClass}">
-                            <div class="admin-card-header">
-                                <span class="admin-card-id">${g.displayId}</span>
-                                <span class="type-badge ${typeClass}">${typeLabel}</span>
+                        <div class=\"admin-card ${cardClass}\">
+                            <div class=\"admin-card-header\">
+                                <span class=\"admin-card-id\">${g.displayId}</span>
+                                <span class=\"type-badge ${typeClass}\">${typeLabel}</span>
                             </div>
-                            <div class="admin-card-body">
-                                <div style="margin-bottom: 5px;"><b>${nameDisplay}</b> 様</div>
+                            <div class=\"admin-card-body\">
+                                <div style=\"margin-bottom: 5px;\"><b>${g.name || '名前なし'}</b> 様</div>
                                 <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
                                 <div>🪑 ${g.pref}</div>
-                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
-                                <div class="wait-time">⏳ 待機: ${waitTime}</div>
+                                <div style=\"margin-top: 5px; color: #666;\">🕐 受付: ${g.time}</div>
+                                <div class=\"wait-time\">⏳ 待機: ${waitTime}</div>
                                 ${waitTimeHtml}
                                 <div>${statusBadges}</div>
                             </div>
-                            <div class="admin-card-actions">
-                                ${actionButtons}
-                            </div>
+                            <div class=\"admin-card-actions\">${actionButtons}</div>
                         </div>
                     `;
                 }).join('');
             }
         }
 
-        // ステータス変更
         socket.on('statusChange', s => {
             const isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             const label = document.getElementById('statusLabel');
-            if (isAccepting) {
-                label.innerText = "✅ 現在：受付中";
-                label.className = "status-accepting";
-            } else {
-                label.innerText = "⏸️ 現在：受付停止中";
-                label.className = "status-stopped";
-            }
-            if (s.queue) {
-                updateUI({ queue: s.queue, stats: {} });
-            }
+            label.innerText = isAccepting ? \"✅ 現在：受付中\" : \"⏸️ 現在：受付停止中\";
+            label.className = isAccepting ? \"status-accepting\" : \"status-stopped\";
+            if (s.queue) updateUI({ queue: s.queue, stats: {} });
         });
 
         socket.on('init', d => {
-            // ★ 新規予約時の音を鳴らすための判定
-            if (d.queue) {
-                lastQueueLength = d.queue.length;
-                isFirstLoad = false;
-            }
-
-            if (!sessionStorage.getItem('wait_time_initialized')) {
-                socket.emit('setWaitTimeDisplay', { enabled: false });
-                waitTimeDisplayEnabled = false;
-                sessionStorage.setItem('wait_time_initialized', 'true');
-            } else {
-                if (d.waitTimeDisplayEnabled !== undefined) {
-                    waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
-                }
-            }
-            
-            if (d.printerEnabled !== undefined) {
-                printerEnabled = d.printerEnabled;
-            }
-            
-            updatePrinterStatus();
-            updateWaitTimeDisplayStatus();
-            updateUI(d);
-            
+            if (d.queue) { lastQueueLength = d.queue.length; isFirstLoad = false; }
+            if (d.waitTimeDisplayEnabled !== undefined) waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
+            if (d.printerEnabled !== undefined) printerEnabled = d.printerEnabled;
+            updatePrinterStatus(); updateWaitTimeDisplayStatus(); updateUI(d);
             const label = document.getElementById('statusLabel');
-            if (d.isAccepting) {
-                label.innerText = "✅ 現在：受付中";
-                label.className = "status-accepting";
-            } else {
-                label.innerText = "⏸️ 現在：受付停止中";
-                label.className = "status-stopped";
-            }
+            label.innerText = d.isAccepting ? \"✅ 現在：受付中\" : \"⏸️ 現在：受付停止中\";
+            label.className = d.isAccepting ? \"status-accepting\" : \"status-stopped\";
         });
         
         socket.on('update', d => {
-            // ★ 新しい予約が入ったら音を鳴らす
             if (d.queue) {
-                if (!isFirstLoad && notificationSoundEnabled && d.queue.length > lastQueueLength) {
-                    playSound('new_reservation');
-                }
-                lastQueueLength = d.queue.length;
-                isFirstLoad = false;
+                if (!isFirstLoad && notificationSoundEnabled && d.queue.length > lastQueueLength) playSound('new_reservation');
+                lastQueueLength = d.queue.length; isFirstLoad = false;
             }
             updateUI(d);
         });
 
-        socket.on('printerStatusChanged', data => {
-            printerEnabled = data.printerEnabled;
-            updatePrinterStatus();
-        });
-
+        socket.on('printerStatusChanged', data => { printerEnabled = data.printerEnabled; updatePrinterStatus(); });
         socket.on('waitTimeDisplayChanged', data => {
             waitTimeDisplayEnabled = data.waitTimeDisplayEnabled;
             updateWaitTimeDisplayStatus();
-            if (data.queue) {
-                updateUI({ queue: data.queue, stats: {} });
-            }
+            if (data.queue) updateUI({ queue: data.queue, stats: {} });
         });
+        socket.on('queueNumberReset', data => alert(`✅ 受付番号を1にリセットしました。`));
+        socket.on('guestArrived', data => playSound('info'));
+        socket.on('dailyReset', () => location.reload());
 
-        socket.on('queueNumberReset', data => {
-            alert(`✅ 受付番号を1にリセットしました。次の受付番号: ${data.nextNumber}`);
-        });
-
-        socket.on('guestArrived', data => {
-            playSound('info');
-        });
-
-        socket.on('dailyReset', () => {
-            alert('🔄 日次リセットが実行されました。新しい1日が始まります！');
-            location.reload();
-        });
-
-        function done(id) { 
-            if (confirm(`${id} を案内完了にしますか？`)) {
-                socket.emit('updateStatus', { displayId: id, status: 'completed' }); 
-            }
-        }
-
+        function done(id) { if (confirm(`${id} を案内完了にしますか？`)) socket.emit('updateStatus', { displayId: id, status: 'completed' }); }
         function callGuest(id, name, adults, children, infants) {
-            const nameText = name ? `${name}様の` : '';
-            if (confirm(`${id} ${nameText}お客様を呼び出しますか？\n（相手に通知が届きます）`)) {
+            if (confirm(`${id} お客様を呼び出しますか？`)) {
                 socket.emit('callGuest', { displayId: id });
-                playSound('call');
-                speakNumber(id, name, adults, children, infants);
+                playSound('call'); speakNumber(id, name, adults, children, infants);
             }
         }
-
         function recallGuest(id, name, adults, children, infants) {
             if (confirm(`${id} を再度呼び出しますか？`)) {
                 socket.emit('callGuest', { displayId: id });
-                playSound('call');
-                speakNumber(id, name, adults, children, infants);
+                playSound('call'); speakNumber(id, name, adults, children, infants);
             }
         }
+        function markAbsent(id) { if (confirm(`${id} を不在にマークしますか？`)) socket.emit('markAbsent', { displayId: id }); }
+        function cancelAbsent(id) { if (confirm(`${id} の不在を解除しますか？`)) socket.emit('cancelAbsent', { displayId: id }); }
+        function setAccept(status, duration) { if (confirm('受付状態を変更しますか？')) socket.emit('setAcceptance', { status, duration }); }
+        function resetStats() { if (confirm('本日の統計をリセットしますか？')) socket.emit('resetStats'); }
+        function resetQueueNumber() { if (confirm('受付番号を1にリセットしますか？')) socket.emit('resetQueueNumber'); }
 
-        function markAbsent(id) {
-            if (confirm(`${id} を不在にマークしますか？\n（10分後に自動削除されます）`)) {
-                socket.emit('markAbsent', { displayId: id });
-            }
-        }
-
-        function cancelAbsent(id) {
-            if (confirm(`${id} の不在を解除しますか？`)) {
-                socket.emit('cancelAbsent', { displayId: id });
-            }
-        }
-        
-        function setAccept(status, duration) { 
-            const msg = status 
-                ? '受付を再開しますか？' 
-                : (duration > 0 ? `${duration}分間受付を停止しますか？` : '受付を停止しますか？');
-            if (confirm(msg)) {
-                socket.emit('setAcceptance', { status, duration }); 
-            }
-        }
-
-        function resetStats() {
-            if (confirm('本日の統計をリセットしますか？\n（待ち状況は保持されます）')) {
-                socket.emit('resetStats');
-            }
-        }
-
-        function resetQueueNumber() {
-            if (confirm('⚠️ 受付番号を1にリセットしますか？\n\n注意：待ち客がいる場合は実行できません。\nすべての案内が完了してから実行してください。')) {
-                socket.emit('resetQueueNumber');
-            }
-        }
-
-        // ★ サウンド再生（指定された秒数分、音を繰り返して鳴らす）
+        // ★ 修正点: MP3再生への変更
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
             if (type === 'call') {
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 880;
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 880; gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.3);
             } else if (type === 'info') {
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 600;
-                gainNode.gain.value = 0.2;
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.15);
+                oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 600; gainNode.gain.value = 0.2;
+                oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.15);
             } else if (type === 'new_reservation') {
-                // スライダーで設定された長さ（秒数）を取得
+                // 設定された長さ（秒数）を取得
                 const durationSeconds = parseInt(document.getElementById('soundDuration').value) || 3;
                 
-                // 設定された秒数の分だけ「ピロン♪」を1秒間隔でスケジュールして再生
-                for (let i = 0; i < durationSeconds; i++) {
-                    let startTime = audioContext.currentTime + (i * 1.0); // 1秒ごとに鳴らす
-                    
-                    const osc = audioContext.createOscillator();
-                    const gain = audioContext.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioContext.destination);
-                    
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(1046.50, startTime); // C6
-                    osc.frequency.setValueAtTime(1318.51, startTime + 0.15); // E6
-
-                    gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.5);
-                }
+                // 指定のMP3ファイルを再生
+                if(currentNotificationAudio) currentNotificationAudio.pause();
+                currentNotificationAudio = new Audio('/1772254751_69a2761f6afb8.mp3');
+                currentNotificationAudio.loop = true;
+                currentNotificationAudio.play().catch(e => console.warn("ブラウザにより音声再生がブロックされました。画面内をどこかクリックしてください。"));
+                
+                // 設定秒数後に停止
+                setTimeout(() => {
+                    if(currentNotificationAudio) {
+                        currentNotificationAudio.pause();
+                        currentNotificationAudio.currentTime = 0;
+                    }
+                }, durationSeconds * 1000);
             }
         }
 
-        socket.on('error', err => {
-            alert('エラー: ' + err.message);
-        });
+        socket.on('error', err => alert('エラー: ' + err.message));
     </script>
 </body>
 </html>
