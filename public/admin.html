@@ -13,13 +13,13 @@
         .header h1 { color: #8b0000; font-size: 1.8em; margin-bottom: 10px; }
         .header .clock { font-size: 2em; font-weight: bold; color: #333; }
         
-        /* 統計グリッドの調整 */
+        /* 統計グリッド：6列で綺麗に整列 */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.15); text-align: center; }
         .stat-value { font-size: 2.5em; font-weight: bold; color: #8b0000; }
         .stat-label { font-size: 0.9em; color: #666; margin-top: 5px; }
-        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; } /* ネット */
-        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; } /* 店舗 */
+        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; } /* ネット表示用 */
+        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; } /* 店舗表示用 */
         
         .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .card h2 { color: #8b0000; margin-bottom: 15px; font-size: 1.4em; }
@@ -38,9 +38,8 @@
         .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .controls label { font-weight: bold; margin-right: 10px; }
         
-        /* 設定コントロール */
         .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .setting-control input[type=\"checkbox\"] { width: 20px; height: 20px; cursor: pointer; }
+        .setting-control input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
         .setting-control label { font-size: 1.05em; font-weight: 600; cursor: pointer; flex: 1; }
         .setting-status { font-size: 0.9em; font-weight: bold; padding: 4px 12px; border-radius: 6px; }
         .status-on { background: #27ae60; color: white; }
@@ -94,97 +93,97 @@
     </style>
 </head>
 <body>
-    <div class=\"header\">
+    <div class="header">
         <h1>🏮 松乃木飯店 管理画面</h1>
-        <div class=\"clock\" id=\"clock\">--:--:--</div>
+        <div class="clock" id="clock">--:--:--</div>
     </div>
 
-    <div class=\"stats-grid\">
-        <div class=\"stat-card\">
-            <div class=\"stat-value\" id=\"queueCount\">0</div>
-            <div class=\"stat-label\">現在待ち組数</div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="queueCount">0</div>
+            <div class="stat-label">現在待ち組数</div>
         </div>
-        <div class=\"stat-card\">
-            <div class=\"stat-value\" id=\"totalWebToday\">0</div>
-            <div class=\"stat-label stat-sub\">ネット受付総数</div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalWebToday">0</div>
+            <div class="stat-label stat-sub">ネット受付総数</div>
         </div>
-        <div class=\"stat-card\">
-            <div class=\"stat-value\" id=\"totalShopToday\">0</div>
-            <div class=\"stat-label stat-shop\">店舗受付総数</div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalShopToday">0</div>
+            <div class="stat-label stat-shop">店舗受付総数</div>
         </div>
-        <div class=\"stat-card\">
-            <div class=\"stat-value\" id=\"totalToday\">0</div>
-            <div class=\"stat-label\">本日受付合計</div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalToday">0</div>
+            <div class="stat-label">本日受付合計</div>
         </div>
-        <div class=\"stat-card\">
-            <div class=\"stat-value\" id=\"completedToday\">0</div>
-            <div class=\"stat-label\">本日案内完了</div>
+        <div class="stat-card">
+            <div class="stat-value" id="completedToday">0</div>
+            <div class="stat-label">本日案内完了</div>
         </div>
-        <div class=\"stat-card\">
-            <div class=\"stat-value\" id=\"avgWait\">0</div>
-            <div class=\"stat-label\">平均待ち時間(分)</div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgWait">0</div>
+            <div class="stat-label">平均待ち時間(分)</div>
         </div>
     </div>
 
-    <div class=\"card\">
-        <h2 id=\"settingsHeader\" class=\"collapsible-header\" onclick=\"toggleSection('settingsContent', 'settingsHeader')\">
+    <div class="card">
+        <h2 id="settingsHeader" class="collapsible-header" onclick="toggleSection('settingsContent', 'settingsHeader')">
             <span>⚙️ システム設定</span>
-            <span class=\"toggle-icon\">▼</span>
+            <span class="toggle-icon">▼</span>
         </h2>
-        <div id=\"settingsContent\">
-            <div class=\"setting-control\">
-                <input type=\"checkbox\" id=\"notificationSoundEnabled\" onchange=\"toggleNotificationSound()\" checked>
-                <label for=\"notificationSoundEnabled\">🔔 新規予約の受信時に音を鳴らす</label>
-                <span class=\"setting-status status-on\" id=\"notificationSoundStatus\">ON</span>
+        <div id="settingsContent">
+            <div class="setting-control">
+                <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()" checked>
+                <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
+                <span class="setting-status status-on" id="notificationSoundStatus">ON</span>
             </div>
-            <div class=\"setting-control\" style=\"background: #fff3e0;\">
-                <div style=\"flex:1; display:flex; align-items:center;\">
-                    <label for=\"soundDuration\" style=\"margin-right:15px; flex: none;\">⏱️ 通知音の長さ:</label>
-                    <input type=\"range\" id=\"soundDuration\" min=\"1\" max=\"10\" value=\"3\" oninput=\"updateSoundDurationLabel()\" onchange=\"updateSoundDuration()\" style=\"flex:1; cursor: pointer;\">
+            <div class="setting-control" style="background: #fff3e0;">
+                <div style="flex:1; display:flex; align-items:center;">
+                    <label for="soundDuration" style="margin-right:15px; flex: none;">⏱️ 通知音の長さ:</label>
+                    <input type="range" id="soundDuration" min="1" max="10" value="3" oninput="updateSoundDurationLabel()" onchange="updateSoundDuration()" style="flex:1; cursor: pointer;">
                 </div>
-                <span class=\"setting-status\" id=\"soundDurationLabel\" style=\"background:#e67e22; color:white; min-width: 60px; text-align:center;\">3秒</span>
+                <span class="setting-status" id="soundDurationLabel" style="background:#e67e22; color:white; min-width: 60px; text-align:center;">3秒</span>
             </div>
-            <div class=\"setting-control\">
-                <input type=\"checkbox\" id=\"voiceEnabled\" onchange=\"toggleVoice()\">
-                <label for=\"voiceEnabled\">🔊 受付番号を音声で読み上げる</label>
-                <span class=\"setting-status status-off\" id=\"voiceStatus\">OFF</span>
+            <div class="setting-control">
+                <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
+                <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
+                <span class="setting-status status-off" id="voiceStatus">OFF</span>
             </div>
-            <div class=\"setting-control\">
-                <input type=\"checkbox\" id=\"printerEnabled\" onchange=\"togglePrinter()\">
-                <label for=\"printerEnabled\">🖨️ 店舗受付時に番号を印刷する</label>
-                <span class=\"setting-status status-on\" id=\"printerStatus\">ON</span>
+            <div class="setting-control">
+                <input type="checkbox" id="printerEnabled" onchange="togglePrinter()">
+                <label for="printerEnabled">🖨️ 店舗受付時に番号を印刷する</label>
+                <span class="setting-status status-on" id="printerStatus">ON</span>
             </div>
-            <div class=\"setting-control\">
-                <input type=\"checkbox\" id=\"waitTimeDisplayEnabled\" onchange=\"toggleWaitTimeDisplay()\">
-                <label for=\"waitTimeDisplayEnabled\">⏱️ 待ち時間目安を表示する</label>
-                <span class=\"setting-status status-off\" id=\"waitTimeDisplayStatus\">OFF</span>
+            <div class="setting-control">
+                <input type="checkbox" id="waitTimeDisplayEnabled" onchange="toggleWaitTimeDisplay()">
+                <label for="waitTimeDisplayEnabled">⏱️ 待ち時間目安を表示する</label>
+                <span class="setting-status status-off" id="waitTimeDisplayStatus">OFF</span>
             </div>
         </div>
     </div>
 
-    <div class=\"card\">
-        <h2 id=\"controlsHeader\" class=\"collapsible-header\" onclick=\"toggleSection('controlsContent', 'controlsHeader')\">
+    <div class="card">
+        <h2 id="controlsHeader" class="collapsible-header" onclick="toggleSection('controlsContent', 'controlsHeader')">
             <span>📋 受付コントロール</span>
-            <span class=\"toggle-icon\">▼</span>
+            <span class="toggle-icon">▼</span>
         </h2>
-        <div id=\"controlsContent\">
-            <div id=\"statusLabel\" class=\"status-accepting\">状態確認中...</div>
-            <div class=\"controls\">
+        <div id="controlsContent">
+            <div id="statusLabel" class="status-accepting">状態確認中...</div>
+            <div class="controls">
                 <label>停止時間設定：</label>
-                <button class=\"btn-stop\" onclick=\"setAccept(false, 0)\">今すぐ停止</button>
-                <button class=\"btn-stop\" onclick=\"setAccept(false, 30)\">30分停止</button>
-                <button class=\"btn-stop\" onclick=\"setAccept(false, 60)\">60分停止</button>
-                <button class=\"btn-start\" onclick=\"setAccept(true, 0)\">▶ 受付再開</button>
-                <button class=\"btn-reset\" onclick=\"resetStats()\">📊 統計リセット</button>
-                <button class=\"btn-danger\" onclick=\"resetQueueNumber()\">🔄 番号を1にリセット</button>
+                <button class="btn-stop" onclick="setAccept(false, 0)">今すぐ停止</button>
+                <button class="btn-stop" onclick="setAccept(false, 30)">30分停止</button>
+                <button class="btn-stop" onclick="setAccept(false, 60)">60分停止</button>
+                <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
+                <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
+                <button class="btn-danger" onclick="resetQueueNumber()">🔄 番号を1にリセット</button>
             </div>
         </div>
     </div>
 
-    <div class=\"card\">
+    <div class="card">
         <h2>👥 待ち状況一覧</h2>
-        <div id=\"list\" class=\"admin-grid\">
-            <div class=\"no-data\" style=\"grid-column: 1 / -1;\">待ち客はいません</div>
+        <div id="list" class="admin-grid">
+            <div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>
         </div>
     </div>
 
@@ -198,7 +197,6 @@
         let isFirstLoad = true;
         let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
         
-        // ★ 修正点: MP3再生用のグローバル変数
         let currentNotificationAudio = null;
 
         function updateClock() {
@@ -313,46 +311,44 @@
             document.getElementById('totalToday').innerText = stats.totalToday || 0;
             document.getElementById('completedToday').innerText = stats.completedToday || 0;
             document.getElementById('avgWait').innerText = stats.averageWaitTime || 0;
-            
-            // ★ 修正点: ネット・店舗別の統計表示
             document.getElementById('totalWebToday').innerText = stats.totalWebToday || 0;
             document.getElementById('totalShopToday').innerText = stats.totalShopToday || 0;
 
             const list = document.getElementById('list');
             if (!d.queue || d.queue.length === 0) {
-                list.innerHTML = '<div class=\"no-data\" style=\"grid-column: 1 / -1;\">待ち客はいません</div>';
+                list.innerHTML = '<div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>';
             } else {
                 list.innerHTML = d.queue.map(g => {
                     const waitTime = getWaitTime(g.timestamp);
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
                     let cardClass = g.arrived ? 'arrived' : (g.called ? 'called' : (g.absent ? 'absent' : ''));
-                    let statusBadges = g.arrived ? '<span class=\"status-badge badge-arrived\">✅ 到着済み</span>' : '';
-                    if(g.called) statusBadges += '<span class=\"status-badge badge-called\">📢 呼び出し中</span>';
-                    if(g.absent) statusBadges += '<span class=\"status-badge badge-absent\">⚠️ 不在(10分後削除)</span>';
+                    let statusBadges = g.arrived ? '<span class="status-badge badge-arrived">✅ 到着済み</span>' : '';
+                    if(g.called) statusBadges += '<span class="status-badge badge-called">📢 呼び出し中</span>';
+                    if(g.absent) statusBadges += '<span class="status-badge badge-absent">⚠️ 不在(10分後削除)</span>';
                     
-                    let actionButtons = g.absent ? `<button class=\"btn-cancel-absent\" onclick=\"cancelAbsent('${g.displayId}')\">不在解除</button>` : `<button class=\"btn-absent\" onclick=\"markAbsent('${g.displayId}')\">不在</button>`;
-                    actionButtons += g.called ? `<button class=\"btn-recall\" onclick=\"recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})\">🔁 再呼出</button>` : `<button class=\"btn-call\" onclick=\"callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})\">📢 呼出</button>`;
-                    actionButtons += `<button class=\"btn-complete\" onclick=\"done('${g.displayId}')\">✓ 案内完了</button>`;
+                    let actionButtons = g.absent ? `<button class="btn-cancel-absent" onclick="cancelAbsent('${g.displayId}')">不在解除</button>` : `<button class="btn-absent" onclick="markAbsent('${g.displayId}')">不在</button>`;
+                    actionButtons += g.called ? `<button class="btn-recall" onclick="recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">🔁 再呼出</button>` : `<button class="btn-call" onclick="callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">📢 呼出</button>`;
+                    actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
 
-                    let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class=\"estimated-wait\">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
+                    let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
 
                     return `
-                        <div class=\"admin-card ${cardClass}\">
-                            <div class=\"admin-card-header\">
-                                <span class=\"admin-card-id\">${g.displayId}</span>
-                                <span class=\"type-badge ${typeClass}\">${typeLabel}</span>
+                        <div class="admin-card ${cardClass}">
+                            <div class="admin-card-header">
+                                <span class="admin-card-id">${g.displayId}</span>
+                                <span class="type-badge ${typeClass}">${typeLabel}</span>
                             </div>
-                            <div class=\"admin-card-body\">
-                                <div style=\"margin-bottom: 5px;\"><b>${g.name || '名前なし'}</b> 様</div>
+                            <div class="admin-card-body">
+                                <div style="margin-bottom: 5px;"><b>${g.name || '名前なし'}</b> 様</div>
                                 <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
                                 <div>🪑 ${g.pref}</div>
-                                <div style=\"margin-top: 5px; color: #666;\">🕐 受付: ${g.time}</div>
-                                <div class=\"wait-time\">⏳ 待機: ${waitTime}</div>
+                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
+                                <div class="wait-time">⏳ 待機: ${waitTime}</div>
                                 ${waitTimeHtml}
                                 <div>${statusBadges}</div>
                             </div>
-                            <div class=\"admin-card-actions\">${actionButtons}</div>
+                            <div class="admin-card-actions">${actionButtons}</div>
                         </div>
                     `;
                 }).join('');
@@ -362,8 +358,8 @@
         socket.on('statusChange', s => {
             const isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             const label = document.getElementById('statusLabel');
-            label.innerText = isAccepting ? \"✅ 現在：受付中\" : \"⏸️ 現在：受付停止中\";
-            label.className = isAccepting ? \"status-accepting\" : \"status-stopped\";
+            label.innerText = isAccepting ? "✅ 現在：受付中" : "⏸️ 現在：受付停止中";
+            label.className = isAccepting ? "status-accepting" : "status-stopped";
             if (s.queue) updateUI({ queue: s.queue, stats: {} });
         });
 
@@ -373,8 +369,8 @@
             if (d.printerEnabled !== undefined) printerEnabled = d.printerEnabled;
             updatePrinterStatus(); updateWaitTimeDisplayStatus(); updateUI(d);
             const label = document.getElementById('statusLabel');
-            label.innerText = d.isAccepting ? \"✅ 現在：受付中\" : \"⏸️ 現在：受付停止中\";
-            label.className = d.isAccepting ? \"status-accepting\" : \"status-stopped\";
+            label.innerText = d.isAccepting ? "✅ 現在：受付中" : "⏸️ 現在：受付停止中";
+            label.className = d.isAccepting ? "status-accepting" : "status-stopped";
         });
         
         socket.on('update', d => {
@@ -414,41 +410,32 @@
         function resetStats() { if (confirm('本日の統計をリセットしますか？')) socket.emit('resetStats'); }
         function resetQueueNumber() { if (confirm('受付番号を1にリセットしますか？')) socket.emit('resetQueueNumber'); }
 
-        // ★ 修正点: MP3再生への変更
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
             if (type === 'call') {
-                oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 880; gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.3);
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain); gain.connect(audioContext.destination);
+                osc.frequency.value = 880; gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.3);
             } else if (type === 'info') {
-                oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 600; gainNode.gain.value = 0.2;
-                oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.15);
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain); gain.connect(audioContext.destination);
+                osc.frequency.value = 600; gain.gain.value = 0.2;
+                osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.15);
             } else if (type === 'new_reservation') {
-                // 設定された長さ（秒数）を取得
                 const durationSeconds = parseInt(document.getElementById('soundDuration').value) || 3;
-                
-                // 指定のMP3ファイルを再生
                 if(currentNotificationAudio) currentNotificationAudio.pause();
                 currentNotificationAudio = new Audio('/1772254751_69a2761f6afb8.mp3');
                 currentNotificationAudio.loop = true;
-                currentNotificationAudio.play().catch(e => console.warn("ブラウザにより音声再生がブロックされました。画面内をどこかクリックしてください。"));
-                
-                // 設定秒数後に停止
+                currentNotificationAudio.play().catch(e => console.warn("音声再生ブロック回避のためクリックしてください"));
                 setTimeout(() => {
-                    if(currentNotificationAudio) {
-                        currentNotificationAudio.pause();
-                        currentNotificationAudio.currentTime = 0;
-                    }
+                    if(currentNotificationAudio) { currentNotificationAudio.pause(); currentNotificationAudio.currentTime = 0; }
                 }, durationSeconds * 1000);
             }
         }
-
         socket.on('error', err => alert('エラー: ' + err.message));
     </script>
 </body>
