@@ -13,13 +13,12 @@
         .header h1 { color: #8b0000; font-size: 1.8em; margin-bottom: 10px; }
         .header .clock { font-size: 2em; font-weight: bold; color: #333; }
         
-        /* 統計グリッド：6列で綺麗に整列 */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.15); text-align: center; }
         .stat-value { font-size: 2.5em; font-weight: bold; color: #8b0000; }
         .stat-label { font-size: 0.9em; color: #666; margin-top: 5px; }
-        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; } /* ネット表示用 */
-        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; } /* 店舗表示用 */
+        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; } 
+        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; } 
         
         .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .card h2 { color: #8b0000; margin-bottom: 15px; font-size: 1.4em; }
@@ -332,6 +331,9 @@
                     actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
 
                     let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
+                    
+                    // 到着予想時刻の表示追加
+                    const arrivalTimeDisplay = g.arrivalTime ? `<div style="color: #d35400; font-weight: bold; margin-top: 5px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
 
                     return `
                         <div class="admin-card ${cardClass}">
@@ -343,6 +345,7 @@
                                 <div style="margin-bottom: 5px;"><b>${g.name || '名前なし'}</b> 様</div>
                                 <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
                                 <div>🪑 ${g.pref}</div>
+                                ${arrivalTimeDisplay}
                                 <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
                                 <div class="wait-time">⏳ 待機: ${waitTime}</div>
                                 ${waitTimeHtml}
