@@ -8,238 +8,82 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #fdfaf5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        header h1 { margin: 0; font-size: 1.5em; font-weight: bold; }
-        header .subtitle { font-size: 0.9em; opacity: 0.9; margin-top: 5px; }
-        
+        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; }
         .main-container { display: flex; flex: 1; height: calc(100vh - 80px); }
-
-        /* 左側：入力フォーム */
-        .left-panel { width: 420px; padding: 20px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
-        .form-box { background: white; padding: 20px; border-radius: 20px; width: 100%; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        input[type="text"], input[type="time"] { padding: 12px; margin: 8px 0 15px; width: 100%; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; transition: border-color 0.3s; }
-        input[type="text"]:focus, input[type="time"]:focus { outline: none; border-color: #8b0000; }
-        
-        .number-control { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f5f5f5; }
-        .control-label { font-size: 0.95em; font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
-        .control-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 5px; }
-        .num-display { font-size: 2.2em; font-weight: bold; min-width: 60px; text-align: center; color: #8b0000; }
-        .btn-step { background: #f5f5f5; border: 2px solid #ccc; width: 50px; height: 50px; border-radius: 50%; font-size: 1.8em; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
-        .btn-step:hover { background: #e0e0e0; transform: scale(1.05); }
-        
-        .quick-nums { display: flex; gap: 8px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
-        .btn-quick { background: #fff; border: 2px solid #d4b483; padding: 8px 15px; border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: all 0.3s; font-weight: 600; }
-        .btn-quick:hover { background: #d4b483; color: white; }
-
-        .seat-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0 20px; }
-        .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 15px; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: all 0.3s; font-weight: 600; text-align: center; }
-        .btn-seat.selected { background: #8b0000; color: white; border-color: #8b0000; }
-        
-        .btn-submit { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; border: none; padding: 20px; width: 100%; font-size: 1.3em; border-radius: 12px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 10px rgba(139, 0, 0, 0.3); }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(139, 0, 0, 0.4); }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-
-        /* 右側：待ち状況 */
-        .right-panel { flex: 1; padding: 20px; background: white; overflow-y: auto; }
-        .queue-header { text-align: center; margin-bottom: 15px; }
-        .queue-header h2 { color: #8b0000; font-size: 1.6em; }
-        .queue-count { font-size: 1.2em; color: #666; }
-        .queue-count .num { font-weight: bold; color: #8b0000; font-size: 1.4em; }
-        
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-        .queue-card { background: linear-gradient(135deg, #fffcf5 0%, #fff8f0 100%); border: 2px solid #d4b483; border-radius: 12px; padding: 15px; text-align: center; transition: all 0.3s; }
-        .queue-card.called { border-color: #e67e22; background: #fff3cd; animation: pulse 2s infinite; }
-        .queue-card.my-number { border: 4px solid #8b0000; box-shadow: 0 8px 20px rgba(139, 0, 0, 0.4); }
-        
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        
+        .left-panel { width: 420px; padding: 20px; border-right: 2px solid #d4b483; overflow-y: auto; background: #fff8f0; }
+        .form-box { background: white; padding: 20px; border-radius: 20px; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        input[type="text"], input[type="time"] { padding: 12px; margin: 8px 0 15px; width: 100%; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; }
+        .control-label { font-size: 0.95em; font-weight: bold; color: #333; display: block; }
+        .btn-submit { background: #8b0000; color: white; border: none; padding: 20px; width: 100%; font-size: 1.3em; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        .queue-card { border: 2px solid #d4b483; border-radius: 12px; padding: 10px; text-align: center; background: white; margin-bottom: 5px; }
+        .queue-card.my-number { border: 4px solid #8b0000; }
         .complete-id { font-size: 5em; color: #8b0000; font-weight: bold; text-align: center; margin: 20px 0; }
-        .call-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e67e22; color: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 10000; text-align: center; display: none; width: 90%; max-width: 400px; }
-
-        @media (max-width: 1000px) { 
-            .main-container { flex-direction: column; }
-            .left-panel { width: 100%; border-right: none; border-bottom: 2px solid #d4b483; }
-        }
+        .call-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e67e22; color: white; padding: 30px; border-radius: 20px; display: none; z-index: 10000; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🏮 松乃木飯店</h1>
-        <div class="subtitle">ネット順番待ち受付</div>
-    </header>
-    
-    <div id="callNotification" class="call-notification">
-        <h2>📢 お呼び出しです</h2>
-        <p>お席の準備ができました<br>店舗スタッフにお声がけください</p>
-        <button onclick="closeCallNotification()" style="background:white; color:#e67e22; border:none; padding:15px; width:100%; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:15px;">確認しました</button>
-    </div>
-    
+    <header><h1>🏮 松乃木飯店</h1><div>ネット順番待ち受付</div></header>
+    <div id="callNotification" class="call-notification"><h2>📢 お呼び出しです</h2><button onclick="closeCallNotification()" style="width:100%; padding:10px; margin-top:10px;">確認</button></div>
     <div class="main-container">
         <div class="left-panel">
             <div id="formArea" class="form-box">
-                <label class="control-label">📝 お名前（任意）</label>
-                <input type="text" id="nameInput" placeholder="お名前を入力" maxlength="20">
-                
-                <label class="control-label">⏰ 到着予定時間（任意）</label>
-                <input type="time" id="targetTimeInput">
-
-                <div class="number-control">
+                <label class="control-label">📝 お名前 (任意)</label>
+                <input type="text" id="nameInput" placeholder="お名前" maxlength="20">
+                <label class="control-label">⏰ 到着予定時間 (10分刻み)</label>
+                <input type="time" id="targetTimeInput" step="600">
+                <div style="margin:20px 0; text-align:center;">
                     <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('adults', -1)">−</button>
-                        <span id="display-adults" class="num-display">2</span>
-                        <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
-                    </div>
-                    <div class="quick-nums">
-                        <button class="btn-quick" onclick="setNum('adults', 1)">1名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 2)">2名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 4)">4名</button>
-                    </div>
+                    <button onclick="changeNum('adults', -1)" style="padding:10px;">-</button>
+                    <span id="display-adults" style="font-size:2em; font-weight:bold; margin:0 15px;">2</span>
+                    <button onclick="changeNum('adults', 1)" style="padding:10px;">+</button>
                 </div>
-
-                <div class="number-control">
-                    <label class="control-label">👧 子供 (小学生)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('children', -1)">−</button>
-                        <span id="display-children" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('children', 1)">+</button>
-                    </div>
-                </div>
-
-                <div class="number-control">
-                    <label class="control-label">👶 幼児 (未就学児)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('infants', -1)">−</button>
-                        <span id="display-infants" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('infants', 1)">+</button>
-                    </div>
-                </div>
-
-                <label class="control-label">🪑 座席のご希望</label>
-                <div class="seat-buttons">
-                    <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                    <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                    <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                    <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
-                </div>
-                
-                <button id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定</button>
+                <button class="btn-submit" onclick="send()">✓ 受付確定</button>
             </div>
-
-            <div id="ticketArea" class="form-box" style="display:none; border: 3px solid #8b0000;">
-                <p style="color:#27ae60; font-weight:bold; text-align:center;">✅ 受付完了しました</p>
+            <div id="ticketArea" class="form-box" style="display:none; border:3px solid #8b0000;">
+                <p style="color:#27ae60; text-align:center; font-weight:bold;">✅ 受付完了</p>
                 <div id="num" class="complete-id">--</div>
-                <div id="waitTimeInfo" style="text-align:center; color:#3498db; font-weight:bold; margin-bottom:15px;"></div>
-                <button class="btn-submit" style="background:#e74c3c; font-size:1.1em; padding:15px;" onclick="cancelMyReservation()">✖ 予約をキャンセルする</button>
-                <button class="btn-submit" onclick="closeTicket()" style="background:#666; margin-top:15px; font-size:1em; padding:12px;">受付画面に戻る</button>
+                <button class="btn-submit" style="background:#e74c3c;" onclick="cancelMyReservation()">✖ 予約をキャンセルする</button>
+                <button class="btn-submit" onclick="location.reload()" style="background:#666; margin-top:10px;">戻る</button>
             </div>
         </div>
-        
-        <div class="right-panel">
-            <div class="queue-header">
-                <h2>📋 現在の待ち状況</h2>
-                <div class="queue-count"><span class="num" id="count">0</span> 組待ち</div>
-            </div>
-            <div id="queueList" class="grid-container"></div>
+        <div class="right-panel" style="flex:1; padding:20px; overflow-y:auto; background:white;">
+            <h2>📋 待ち状況</h2><div id="queueList"></div>
         </div>
     </div>
-
     <script>
         const socket = io();
-        let nums = { adults: 2, children: 0, infants: 0 };
-        let myNumber = null;
-        let selectedSeat = 'どこでも';
-        let soundEnabled = false;
-
-        function updateDisplays() {
-            document.getElementById('display-adults').innerText = nums.adults;
-            document.getElementById('display-children').innerText = nums.children;
-            document.getElementById('display-infants').innerText = nums.infants;
-        }
-
-        function changeNum(key, step) {
-            nums[key] = Math.max(0, nums[key] + step);
-            if(key === 'adults' && nums.adults < 1) nums.adults = 1;
-            updateDisplays();
-        }
-
-        function setNum(key, val) { nums[key] = val; updateDisplays(); }
-
-        function selectSeat(seat) {
-            selectedSeat = seat;
-            document.querySelectorAll('.btn-seat').forEach(btn => {
-                btn.classList.toggle('selected', btn.innerText === seat);
-            });
-        }
-
-        function send() {
-            // 音声再生の許可を取得
-            soundEnabled = true;
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            ctx.resume();
-            if (window.speechSynthesis) { window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); }
-
-            const targetTime = document.getElementById('targetTimeInput').value;
-            const name = document.getElementById('nameInput').value.trim();
-            
-            // 確認窓なしで即送信
-            socket.emit('register', { type: 'web', ...nums, pref: selectedSeat, name, targetTime });
-        }
-
-        socket.on('registered', g => {
-            myNumber = g.displayId;
-            document.getElementById('formArea').style.display = 'none';
-            document.getElementById('ticketArea').style.display = 'block';
-            document.getElementById('num').innerText = g.displayId;
-            
-            if (g.estimatedWait) {
-                document.getElementById('waitTimeInfo').innerText = `⏱️ 待ち時間目安: 約${g.estimatedWait}分`;
-            }
-        });
-
-        socket.on('update', d => {
-            document.getElementById('count').innerText = d.queue.length;
+        let nums = { adults: 2, children: 0, infants: 0 }, myNumber = null, soundEnabled = false;
+        function changeNum(k, s) { nums[k] = Math.max(k==='adults'?1:0, nums[k]+s); document.getElementById('display-'+k).innerText = nums[k]; }
+        socket.on('init', d => updateQueue(d));
+        socket.on('update', d => updateQueue(d));
+        socket.on('guestCalled', d => { if (d.displayId === myNumber) showCallNotification(); });
+        function updateQueue(d) {
             const list = document.getElementById('queueList');
-            list.innerHTML = d.queue.map(g => `
-                <div class="queue-card ${g.called?'called':''} ${g.displayId===myNumber?'my-number':''}">
-                    <span style="font-weight:bold; font-size:1.4em; color:#8b0000;">${g.displayId}</span><br>
-                    <span style="font-size:0.8em; color:#666;">${g.adults+g.children+g.infants}名 / ${g.pref}</span>
-                </div>
-            `).join('');
-        });
-
-        socket.on('guestCalled', data => {
-            if (data.displayId === myNumber) {
-                document.getElementById('callNotification').style.display = 'block';
-                if (soundEnabled && window.speechSynthesis) {
-                    const voice = new SpeechSynthesisUtterance(myNumber.replace('-', '番') + 'のお客様、順番になりました。店舗スタッフにお声がけください。');
-                    voice.lang = 'ja-JP';
-                    window.speechSynthesis.speak(voice);
-                }
-                if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
-            }
-        });
-
+            list.innerHTML = d.queue.map(g => `<div class="queue-card ${g.displayId===myNumber?'my-number':''}">
+                <b>${g.displayId}</b> (${g.adults}名) ${g.targetTime?'[予定:'+g.targetTime+']':''}
+            </div>`).join('');
+        }
+        function send() {
+            soundEnabled = true; 
+            const ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume();
+            if (window.speechSynthesis) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+            socket.emit('register', { type: 'web', ...nums, pref: 'どこでも', name: document.getElementById('nameInput').value.trim(), targetTime: document.getElementById('targetTimeInput').value });
+        }
         function cancelMyReservation() {
-            if (confirm('順番待ちをキャンセルしてもよろしいですか？')) {
-                socket.emit('cancelReservation', { displayId: myNumber });
-                myNumber = null;
-                closeTicket();
+            if (confirm('キャンセルしますか？')) { socket.emit('cancelReservation', { displayId: myNumber }); location.reload(); }
+        }
+        function showCallNotification() {
+            document.getElementById('callNotification').style.display = 'block';
+            if (soundEnabled && window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(myNumber.replace('-', '番') + 'のお客様、順番です。');
+                utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
             }
         }
-
         function closeCallNotification() { document.getElementById('callNotification').style.display = 'none'; }
-        
-        function closeTicket() {
-            document.getElementById('ticketArea').style.display='none';
-            document.getElementById('formArea').style.display='block';
-            nums = { adults: 2, children: 0, infants: 0 };
-            document.getElementById('nameInput').value = '';
-            document.getElementById('targetTimeInput').value = '';
-            updateDisplays();
-            selectSeat('どこでも');
-        }
+        socket.on('registered', g => {
+            myNumber = g.displayId; document.getElementById('formArea').style.display = 'none';
+            document.getElementById('ticketArea').style.display = 'block'; document.getElementById('num').innerText = g.displayId;
+        });
     </script>
 </body>
 </html>
