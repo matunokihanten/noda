@@ -11,6 +11,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// 📂 静的ファイル（HTML, MP3など）を 'public' フォルダから読み込む設定
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
@@ -19,10 +20,13 @@ const LINE_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const SHOP_EMAIL = process.env.SHOP_EMAIL || 'matunokihanten.yoyaku@gmail.com';
 const BREVO_USER = process.env.BREVO_USER;
 const BREVO_PASS = process.env.BREVO_PASS;
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_APP_PASS = (process.env.GMAIL_APP_PASS || '').replace(/\s+/g, '');
 
 const DATA_FILE = path.join(__dirname, 'queue-data.json');
 const PRINT_JOB_FILE = path.join(__dirname, 'print_job.bin');
 
+// システムの状態変数 (詳細統計項目を保持)
 let queue = [];
 let nextNumber = 1;
 let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
@@ -34,6 +38,7 @@ let waitTimes = [];
 let acceptanceTimer = null; 
 let absentTimers = {}; 
 
+// 💾 データの読み込み
 if (fs.existsSync(DATA_FILE)) {
     try {
         const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
@@ -53,6 +58,7 @@ function saveData() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
+// 🏮 LINE通知
 async function sendLineNotification(messageText) {
     if (!LINE_ACCESS_TOKEN) return;
     try {
@@ -63,7 +69,19 @@ async function sendLineNotification(messageText) {
     } catch (e) { console.error("❌ LINE送信失敗:", e.response ? e.response.data : e.message); }
 }
 
-// 🖨 プリンター制御 (到着予定時刻を印字)
+// 📧 メールバックアップ通知
+async function sendEmailBackup(subject, text) {
+    const mailOptions = { from: SHOP_EMAIL, to: SHOP_EMAIL, subject, text };
+    if (BREVO_USER && BREVO_PASS) {
+        try {
+            const transport = nodemailer.createTransport({ host: 'smtp-relay.brevo.com', port: 587, auth: { user: BREVO_USER, pass: BREVO_PASS } });
+            await transport.sendMail(mailOptions);
+            return;
+        } catch (e) { console.warn("⚠️ Brevoメール失敗:", e.message); }
+    }
+}
+
+// 🖨 プリンター制御（人数内訳を印字するように修正）
 function printTicket(guest) {
     if (!printerEnabled) return;
     try {
@@ -73,10 +91,9 @@ function printTicket(guest) {
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
         
+        // 🌟 修正点：日本時間と、大人・子供・幼児の内訳を footerText に追加
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-        // 🌟 到着予定時刻がある場合に印字
-        const arrivalText = guest.targetTime ? `到着予定：${guest.targetTime}\n` : "";
-        const footerText = `日時：${nowJst}\n${arrivalText}人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
+        const footerText = `日時：${nowJst}\n人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
         
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
         const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
@@ -84,6 +101,7 @@ function printTicket(guest) {
     } catch (e) { console.error("印刷エラー:", e); }
 }
 
+// 🖨 CloudPRNT用エンドポイント
 app.post('/cloudprnt', (req, res) => res.json({ jobReady: fs.existsSync(PRINT_JOB_FILE), mediaTypes: ["application/vnd.star.starprnt"] }));
 app.get('/cloudprnt', (req, res) => {
     if (fs.existsSync(PRINT_JOB_FILE)) {
@@ -94,9 +112,11 @@ app.get('/cloudprnt', (req, res) => {
 });
 app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.unlinkSync(PRINT_JOB_FILE); res.status(200).send(); });
 
+// 💬 Socket.io 通信
 io.on('connection', (socket) => {
     socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled });
 
+    // 新規登録
     socket.on('register', async (data) => {
         if (!isAccepting) return;
         const prefix = data.type === 'shop' ? 'S' : 'W';
@@ -113,26 +133,34 @@ io.on('connection', (socket) => {
             estimatedWait: estimatedWait
         };
         queue.push(newGuest);
+        
+        // 統計の更新
         stats.totalToday++;
         if (data.type === 'shop') { stats.totalShopToday++; } else { stats.totalWebToday++; }
         saveData();
 
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
         
-        const msg = `【予約】${newGuest.displayId}\n到着:${data.targetTime || '未定'}\n人数:${data.adults}名\n${data.name || 'なし'}様`;
+        const msg = `【松乃木飯店 予約】\n番号：${newGuest.displayId}\n人数：${data.adults}名\n名前：${data.name || 'なし'}様`;
         sendLineNotification(msg);
+        sendEmailBackup(`新規受付 ${newGuest.displayId}`, msg);
 
         io.emit('update', { queue, stats });
         socket.emit('registered', newGuest);
     });
 
+    // キャンセル処理
     socket.on('cancelReservation', ({ displayId }) => {
-        queue = queue.filter(g => g.displayId !== displayId);
-        if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
-        saveData();
-        io.emit('update', { queue, stats });
+        const guestIndex = queue.findIndex(g => g.displayId === displayId);
+        if (guestIndex !== -1) {
+            queue.splice(guestIndex, 1);
+            if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
+            saveData();
+            io.emit('update', { queue, stats });
+        }
     });
 
+    // 案内完了
     socket.on('updateStatus', ({ displayId, status }) => {
         if (status === 'completed') {
             const guest = queue.find(g => g.displayId === displayId);
@@ -153,11 +181,29 @@ io.on('connection', (socket) => {
     socket.on('markArrived', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) { 
-            guest.arrived = true; 
-            saveData(); 
-            if (printerEnabled) printTicket(guest); // 店頭タップで発券
+            guest.arrived = true; saveData(); 
             io.emit('update', { queue, stats }); 
             io.emit('guestArrived', { displayId: guest.displayId });
+        }
+    });
+
+    socket.on('markAbsent', ({ displayId }) => {
+        const guest = queue.find(g => g.displayId === displayId);
+        if (guest) {
+            guest.absent = true; saveData(); io.emit('update', { queue, stats });
+            absentTimers[displayId] = setTimeout(() => {
+                queue = queue.filter(g => g.displayId !== displayId);
+                saveData(); io.emit('update', { queue, stats });
+                delete absentTimers[displayId];
+            }, 600000);
+        }
+    });
+
+    socket.on('cancelAbsent', ({ displayId }) => {
+        const guest = queue.find(g => g.displayId === displayId);
+        if (guest) {
+            guest.absent = false; saveData(); io.emit('update', { queue, stats });
+            if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
         }
     });
 
@@ -166,24 +212,36 @@ io.on('connection', (socket) => {
         if (guest) {
             guest.called = true; saveData();
             io.emit('update', { queue, stats });
-            io.emit('guestCalled', { displayId: guest.displayId });
+            io.emit('guestCalled', { displayId: guest.displayId, type: guest.type });
         }
+    });
+
+    socket.on('resetQueueNumber', () => {
+        if (queue.length === 0) { nextNumber = 1; saveData(); io.emit('queueNumberReset', { nextNumber }); }
+        else { socket.emit('error', { message: '待ち客がいる間はリセットできません' }); }
+    });
+
+    socket.on('resetStats', () => {
+        stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
+        waitTimes = []; saveData(); io.emit('update', { queue, stats });
     });
 
     socket.on('setAcceptance', ({ status, duration }) => {
         isAccepting = status;
         if (acceptanceTimer) { clearTimeout(acceptanceTimer); acceptanceTimer = null; }
         if (!status && duration > 0) {
-            acceptanceTimer = setTimeout(() => { isAccepting = true; saveData(); io.emit('statusChange', { isAccepting: true }); }, duration * 60 * 1000);
+            acceptanceTimer = setTimeout(() => {
+                isAccepting = true; saveData(); io.emit('statusChange', { isAccepting: true });
+            }, duration * 60 * 1000);
         }
         saveData(); io.emit('statusChange', { isAccepting });
     });
 
     socket.on('setPrinterEnabled', ({ enabled }) => { printerEnabled = enabled; saveData(); io.emit('printerStatusChanged', { printerEnabled }); });
     socket.on('setWaitTimeDisplay', ({ enabled }) => { waitTimeDisplayEnabled = enabled; saveData(); io.emit('waitTimeDisplayChanged', { waitTimeDisplayEnabled, queue }); });
-    socket.on('resetStats', () => { stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 }; waitTimes = []; saveData(); io.emit('update', { queue, stats }); });
 });
 
+// 🔄 日次リセット処理 (毎日深夜0時に実行)
 setInterval(() => {
     const jstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jstNow.getHours() === 0 && jstNow.getMinutes() === 0) {
@@ -194,4 +252,4 @@ setInterval(() => {
 }, 60000);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server on Port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 System Running on Port ${PORT}`));
