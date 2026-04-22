@@ -2,105 +2,241 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>松乃木飯店 管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松乃木飯店 管理画面</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background: #667eea; height: 100vh; overflow: hidden; display: flex; flex-direction: column; font-size: 13px; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
         
-        /* 統計エリア：一行で収まるよう極小化 */
-        .stats-strip { display: flex; background: white; padding: 4px; gap: 4px; flex-shrink: 0; overflow-x: auto; }
-        .stat-item { background: #f0f0f0; padding: 4px 8px; border-radius: 4px; text-align: center; min-width: 60px; flex: 1; }
-        .stat-val { font-weight: bold; color: #8b0000; font-size: 1.2em; display: block; }
-        .stat-lbl { font-size: 0.7em; color: #666; }
-
-        /* 設定エリア：一行にトグルを集約 */
-        .settings-bar { background: #fff3e0; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-bottom: 1px solid #ddd; }
-        .btn-ctrl { padding: 4px 8px; border-radius: 4px; border: none; font-weight: bold; color: white; font-size: 0.85em; }
-
-        /* 待ちリスト：高さを最大化 */
-        .list-container { flex: 1; padding: 6px; overflow-y: auto; background: rgba(255,255,255,0.2); }
-        .admin-card { background: white; border-radius: 8px; padding: 6px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; position: relative; }
-        .admin-card.called { background: #fffbeb; border-left: 6px solid #e67e22; }
-        .admin-card.absent { background: #fef2f2; opacity: 0.7; }
+        .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
+        .header h1 { color: #8b0000; font-size: 1.8em; margin-bottom: 10px; }
+        .header .clock { font-size: 2em; font-weight: bold; color: #333; }
         
-        .card-info { flex: 1; }
-        .card-id { font-weight: bold; font-size: 1.4em; color: #8b0000; margin-right: 8px; }
-        .card-meta { font-size: 0.8em; color: #555; }
-        .arrival-tag { background: #d35400; color: white; padding: 1px 5px; border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px; }
-
-        .card-btns { display: flex; flex-direction: column; gap: 3px; width: 90px; }
-        .btn-act { padding: 6px 0; font-size: 0.8em; border-radius: 4px; border: none; font-weight: bold; color: white; }
-        .btn-call { background: #f39c12; }
-        .btn-done { background: #2ecc71; }
-        .btn-abs { background: #e74c3c; }
+        /* 統計グリッド（6列対応） */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.15); text-align: center; }
+        .stat-value { font-size: 2.2em; font-weight: bold; color: #8b0000; }
+        .stat-label { font-size: 0.9em; color: #666; margin-top: 5px; }
+        .stat-sub { color: #9b59b6; font-weight: bold; }
+        .stat-shop { color: #3498db; font-weight: bold; }
         
-        #clock { font-weight: bold; color: #333; margin-right: 10px; }
+        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .card h2 { color: #8b0000; margin-bottom: 15px; font-size: 1.4em; }
+        
+        /* ボタン基本スタイル */
+        button { cursor: pointer; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; transition: all 0.3s; font-size: 0.95em; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .btn-stop { background: #e74c3c; color: white; }
+        .btn-start { background: #27ae60; color: white; }
+        .btn-reset { background: #95a5a6; color: white; }
+        .btn-danger { background: #c0392b; color: white; }
+        
+        #statusLabel { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; padding: 10px; border-radius: 8px; text-align: center; }
+        .status-accepting { background: #d4edda; color: #155724; }
+        .status-stopped { background: #f8d7da; color: #721c24; }
+        
+        /* 設定・コントロール */
+        .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .setting-control input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
+        .setting-status { font-size: 0.9em; font-weight: bold; padding: 4px 12px; border-radius: 6px; }
+        .status-on { background: #27ae60; color: white; }
+        .status-off { background: #e74c3c; color: white; }
+        
+        .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .toggle-icon { font-size: 0.8em; transition: transform 0.3s; }
+        .collapsed .toggle-icon { transform: rotate(-90deg); }
+        
+        /* カード型グリッドレイアウト */
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .admin-card { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; transition: 0.2s; position: relative; }
+        .admin-card.called { border-color: #e67e22; background: #fffbeb; }
+        .admin-card.absent { border-color: #e74c3c; background: #fef2f2; opacity: 0.8; }
+        
+        .arrival-time-badge { background: #d35400; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.9em; font-weight: bold; position: absolute; top: 10px; right: 10px; }
+        .admin-card-id { font-size: 1.6em; font-weight: bold; color: #8b0000; margin-bottom: 5px; }
+        .admin-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .btn-call { background: #e67e22; color: white; }
+        .btn-recall { background: #f39c12; color: white; }
+        .btn-complete { background: #2ecc71; color: white; grid-column: 1 / -1; font-size: 1.1em !important; padding: 12px !important; }
+        .btn-absent { background: #e74c3c; color: white; }
+        .btn-cancel-absent { background: #3498db; color: white; }
+        
+        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-top: 5px; }
+        .badge-called { background: #e67e22; color: white; }
+        .badge-absent { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
-    <div class="stats-strip">
-        <div class="stat-item"><span id="qCount" class="stat-val">0</span><span class="stat-lbl">待ち</span></div>
-        <div class="stat-item"><span id="webCount" class="stat-val">0</span><span class="stat-lbl" style="color:#9b59b6">ネット</span></div>
-        <div class="stat-item"><span id="shopCount" class="stat-val">0</span><span class="stat-lbl" style="color:#3498db">店舗</span></div>
-        <div class="stat-item"><span id="allCount" class="stat-val">0</span><span class="stat-lbl">本日計</span></div>
-        <div class="stat-item"><span id="doneCount" class="stat-val">0</span><span class="stat-lbl">完了</span></div>
-        <div class="stat-item"><span id="avgW" class="stat-val">0</span><span class="stat-lbl">平均分</span></div>
+    <div class="header">
+        <h1>🏮 松乃木飯店 管理画面</h1>
+        <div class="clock" id="clock">00:00:00</div>
     </div>
-    
-    <div class="settings-bar">
-        <div style="display:flex; align-items:center;">
-            <span id="clock">00:00:00</span>
-            <input type="checkbox" id="soundOn" checked>🔔
-            <input type="range" id="soundLen" min="1" max="5" value="3" style="width:40px;">
-        </div>
-        <div style="display:flex; gap:4px;">
-            <button id="stateBtn" class="btn-ctrl" style="background:#2ecc71;" onclick="toggleAccept()">受付中</button>
-            <button class="btn-ctrl" style="background:#95a5a6;" onclick="resetStats()">リセット</button>
+
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="count">0</div><div class="stat-label">現在待ち</div></div>
+        <div class="stat-card"><div class="stat-value" id="webCount">0</div><div class="stat-label stat-sub">ネット受付</div></div>
+        <div class="stat-card"><div class="stat-value" id="shopCount">0</div><div class="stat-label stat-shop">店舗受付</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalToday">0</div><div class="stat-label">本日合計</div></div>
+        <div class="stat-card"><div class="stat-value" id="completedToday">0</div><div class="stat-label">案内完了</div></div>
+        <div class="stat-card"><div class="stat-value" id="avgWait">0</div><div class="stat-label">平均待ち(分)</div></div>
+    </div>
+
+    <div class="card">
+        <h2 class="collapsible-header" onclick="toggleSection('settingsContent', this)">
+            <span>⚙️ システム設定</span><span class="toggle-icon">▼</span>
+        </h2>
+        <div id="settingsContent">
+            <div class="setting-control">
+                <label>🔔 新規予約の通知音 (MP3)</label>
+                <input type="checkbox" id="soundOn" checked onchange="toggleSound()">
+                <span class="setting-status status-on" id="soundLabel">ON</span>
+            </div>
+            <div class="setting-control" style="background:#fff3e0;">
+                <label>⏱️ 通知音の長さ:</label>
+                <input type="range" id="soundLen" min="1" max="10" value="3" oninput="updateSoundLenLabel()" onchange="saveSoundLen()">
+                <span class="setting-status" id="soundLenLabel" style="background:#e67e22;color:white;min-width:60px;text-align:center;">3秒</span>
+            </div>
+            <div class="setting-control">
+                <label>🔊 呼出番号を音声で読み上げる</label>
+                <input type="checkbox" id="voiceOn" onchange="toggleVoice()">
+                <span class="setting-status status-off" id="voiceLabel">OFF</span>
+            </div>
+            <div class="setting-control">
+                <label>🖨️ 店舗受付時に自動発券する</label>
+                <input type="checkbox" id="printerOn" onchange="togglePrinter()">
+                <span class="setting-status status-on" id="printerLabel">ON</span>
+            </div>
         </div>
     </div>
 
-    <div id="list" class="list-container"></div>
+    <div class="card">
+        <h2 class="collapsible-header" onclick="toggleSection('controlsContent', this)">
+            <span>📋 受付コントロール</span><span class="toggle-icon">▼</span>
+        </h2>
+        <div id="controlsContent">
+            <div id="statusLabel" class="status-accepting">状態確認中...</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-stop" onclick="setAccept(false, 0)">今すぐ停止</button>
+                <button class="btn-stop" onclick="setAccept(false, 30)">30分停止</button>
+                <button class="btn-stop" onclick="setAccept(false, 60)">60分停止</button>
+                <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
+                <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
+                <button class="btn-danger" onclick="resetNumber()">🔄 番号を1にリセット</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>👥 待ち状況一覧</h2>
+        <div id="list" class="admin-grid"></div>
+    </div>
 
     <script>
         const socket = io();
-        let lastLen = 0, audio = null, isAccepting = true;
+        let lastLen = 0, audio = null, voiceEnabled = false;
 
-        socket.on('init', d => { updateUI(d); isAccepting = d.isAccepting; updateAcceptUI(); });
-        socket.on('update', d => { if (d.queue.length > lastLen && document.getElementById('soundOn').checked) playSound(); lastLen = d.queue.length; updateUI(d); });
-        socket.on('statusChange', s => { isAccepting = s.isAccepting; updateAcceptUI(); });
+        // 時計更新
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('ja-JP'); }, 1000);
 
-        function updateUI(d) {
-            document.getElementById('qCount').innerText = d.queue.length;
-            document.getElementById('webCount').innerText = d.stats.totalWebToday || 0;
-            document.getElementById('shopCount').innerText = d.stats.totalShopToday || 0;
-            document.getElementById('allCount').innerText = d.stats.totalToday;
-            document.getElementById('doneCount').innerText = d.stats.completedToday;
-            document.getElementById('avgW').innerText = d.stats.averageWaitTime || 0;
-            
-            document.getElementById('list').innerHTML = d.queue.map(g => `<div class="admin-card ${g.called?'called':''} ${g.absent?'absent':''}">
-                <div class="card-info">
-                    <span class="card-id">${g.displayId}</span>
-                    ${g.targetTime?'<span class="arrival-tag">⏰'+g.targetTime+'</span>':''}
-                    <div class="card-meta">
-                        <b>${g.name||'名前なし'}</b> 様 (${g.adults}/${g.children}/${g.infants})<br>
-                        🪑 ${g.pref} | 🕐 ${g.time}
-                    </div>
-                </div>
-                <div class="card-btns">
-                    <button class="btn-act btn-call" onclick="socket.emit('callGuest',{displayId:'${g.displayId}'})">📢 呼出</button>
-                    <button class="btn-act btn-done" onclick="socket.emit('updateStatus',{displayId:'${g.displayId}',status:'completed'})">✓ 完了</button>
-                    ${g.absent?`<button class="btn-act" style="background:#3498db" onclick="socket.emit('cancelAbsent',{displayId:'${g.displayId}'})">不在解除</button>`:`<button class="btn-act btn-abs" onclick="socket.emit('markAbsent',{displayId:'${g.displayId}'})">不在</button>`}
-                </div>
-            </div>`).join('');
+        // セクション開閉
+        function toggleSection(id, el) {
+            const content = document.getElementById(id);
+            const isHidden = content.style.display === 'none';
+            content.style.display = isHidden ? 'block' : 'none';
+            el.classList.toggle('collapsed', !isHidden);
         }
 
-        function toggleAccept() { socket.emit('setAcceptance', { status: !isAccepting, duration: 0 }); }
-        function updateAcceptUI() { const b = document.getElementById('stateBtn'); b.innerText = isAccepting ? "受付中" : "停止中"; b.style.background = isAccepting ? "#2ecc71" : "#e74c3c"; }
-        function resetStats() { if(confirm('統計リセット？')) socket.emit('resetStats'); }
-        function playSound() { if(audio) audio.pause(); audio = new Audio('/1772254751_69a2761f6afb8.mp3'); audio.loop = true; audio.play(); setTimeout(() => { if(audio) audio.pause(); }, document.getElementById('soundLen').value * 1000); }
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('ja-JP'); }, 1000);
+        // 音声・設定関連
+        function updateSoundLenLabel() { document.getElementById('soundLenLabel').innerText = document.getElementById('soundLen').value + '秒'; }
+        function saveSoundLen() { localStorage.setItem('soundDuration', document.getElementById('soundLen').value); playSound('new'); }
+        function toggleSound() { document.getElementById('soundLabel').innerText = document.getElementById('soundOn').checked ? 'ON' : 'OFF'; document.getElementById('soundLabel').className = 'setting-status ' + (document.getElementById('soundOn').checked ? 'status-on' : 'status-off'); }
+        function toggleVoice() { voiceEnabled = document.getElementById('voiceOn').checked; document.getElementById('voiceLabel').innerText = voiceEnabled ? 'ON' : 'OFF'; document.getElementById('voiceLabel').className = 'setting-status ' + (voiceEnabled ? 'status-on' : 'status-off'); }
+        function togglePrinter() { socket.emit('setPrinterEnabled', { enabled: document.getElementById('printerOn').checked }); }
+
+        socket.on('init', d => {
+            updateUI(d);
+            document.getElementById('printerOn').checked = d.printerEnabled;
+            togglePrinterUI(d.printerEnabled);
+            updateStatusLabel(d.isAccepting);
+        });
+
+        socket.on('update', d => {
+            if (d.queue.length > lastLen && document.getElementById('soundOn').checked) playSound('new');
+            lastLen = d.queue.length;
+            updateUI(d);
+        });
+
+        socket.on('statusChange', s => updateStatusLabel(s.isAccepting));
+        socket.on('printerStatusChanged', d => togglePrinterUI(d.printerEnabled));
+
+        function updateUI(d) {
+            // 統計更新
+            document.getElementById('count').innerText = d.queue.length;
+            document.getElementById('webCount').innerText = d.stats.totalWebToday || 0;
+            document.getElementById('shopCount').innerText = d.stats.totalShopToday || 0;
+            document.getElementById('totalToday').innerText = d.stats.totalToday;
+            document.getElementById('completedToday').innerText = d.stats.completedToday;
+            document.getElementById('avgWait').innerText = d.stats.averageWaitTime || 0;
+
+            // リスト更新
+            const list = document.getElementById('list');
+            list.innerHTML = d.queue.map(g => {
+                const arrivalBadge = g.targetTime ? `<div class="arrival-time-badge">⏰予定 ${g.targetTime}</div>` : `<div class="arrival-time-badge" style="background:#95a5a6;">🕒今すぐ</div>`;
+                const statusBadge = g.called ? '<span class="status-badge badge-called">📢 呼出中</span>' : (g.absent ? '<span class="status-badge badge-absent">⚠️ 不在(10分後消)</span>' : '');
+                const absentBtn = g.absent ? `<button class="btn-cancel-absent" onclick="socket.emit('cancelAbsent', {displayId:'${g.displayId}'})">不在解除</button>` : `<button class="btn-absent" onclick="markAbsent('${g.displayId}')">不在</button>`;
+                const callBtn = g.called ? `<button class="btn-recall" onclick="call('${g.displayId}')">🔁 再呼出</button>` : `<button class="btn-call" onclick="call('${g.displayId}')">📢 呼出</button>`;
+
+                return `
+                <div class="admin-card ${g.called?'called':''} ${g.absent?'absent':''}">
+                    ${arrivalBadge}
+                    <div class="admin-card-id">${g.displayId}</div>
+                    <div style="font-weight:bold;">${g.name || '名前なし'} 様</div>
+                    <div style="font-size:0.85em; color:#666;">
+                        👥 ${g.adults}名/子${g.children}/幼${g.infants} <br>
+                        🪑 ${g.pref} | 🕐受付: ${g.time}
+                    </div>
+                    ${statusBadge}
+                    <div class="admin-card-actions">
+                        ${absentBtn}
+                        ${callBtn}
+                        <button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // アクション
+        function call(id) { socket.emit('callGuest', {displayId: id}); if (voiceEnabled) speak(id); }
+        function done(id) { if (confirm(id + ' を完了にしますか？')) socket.emit('updateStatus', {displayId: id, status: 'completed'}); }
+        function markAbsent(id) { if (confirm(id + ' を不在にしますか？')) socket.emit('markAbsent', {displayId: id}); }
+        function setAccept(s, d) { socket.emit('setAcceptance', {status: s, duration: d}); }
+        function resetStats() { if (confirm('統計をリセットしますか？')) socket.emit('resetStats'); }
+        function resetNumber() { if (confirm('番号を1に戻しますか？')) socket.emit('resetQueueNumber'); }
+
+        function speak(id) {
+            const utterance = new SpeechSynthesisUtterance(id.replace('-', '番') + 'のお客様、お呼び出しです。');
+            utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
+        }
+
+        function playSound(type) {
+            if (audio) audio.pause();
+            audio = new Audio('/1772254751_69a2761f6afb8.mp3');
+            audio.loop = true; audio.play().catch(e => console.log("Sound error"));
+            const sec = parseInt(document.getElementById('soundLen').value) || 3;
+            setTimeout(() => { if (audio) { audio.pause(); audio.currentTime = 0; } }, sec * 1000);
+        }
+
+        function updateStatusLabel(is) {
+            const l = document.getElementById('statusLabel');
+            l.innerText = is ? "✅ 現在：受付中" : "⏸️ 現在：受付停止中";
+            l.className = is ? "status-accepting" : "status-stopped";
+        }
+
+        function togglePrinterUI(en) {
+            document.getElementById('printerLabel').innerText = en ? 'ON' : 'OFF';
+            document.getElementById('printerLabel').className = 'setting-status ' + (en ? 'status-on' : 'status-off');
+        }
     </script>
 </body>
 </html>
