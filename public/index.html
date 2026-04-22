@@ -3,109 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>松乃木飯店 ネット順番待ち</title>
+    <title>松乃木飯店 店舗受付</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #fdfaf5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .main-container { display: flex; flex: 1; height: calc(100vh - 80px); }
-        .left-panel { width: 420px; padding: 20px; border-right: 2px solid #d4b483; overflow-y: auto; background: #fff8f0; }
-        .form-box { background: white; padding: 20px; border-radius: 20px; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        input[type="text"], input[type="time"] { padding: 12px; margin: 8px 0 15px; width: 100%; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; }
-        .control-label { font-size: 0.95em; font-weight: bold; color: #333; display: block; }
+        body { font-family: sans-serif; background: #1e3c72; color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: #8b0000; padding: 15px; text-align: center; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .left-panel { width: 450px; background: white; color: black; padding: 20px; border-right: 5px solid #8b0000; overflow-y: auto; }
+        .btn-submit { background: #8b0000; color: white; border: none; padding: 20px; width: 100%; font-size: 1.5em; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
         .num-display { font-size: 2.2em; font-weight: bold; min-width: 60px; text-align: center; color: #8b0000; }
-        .btn-step { background: #f5f5f5; border: 2px solid #ccc; width: 50px; height: 50px; border-radius: 50%; font-size: 1.8em; cursor: pointer; }
-        .btn-submit { background: #8b0000; color: white; border: none; padding: 20px; width: 100%; font-size: 1.3em; border-radius: 12px; cursor: pointer; font-weight: bold; }
-        .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: 600; text-align: center; }
+        .btn-step { background: #f5f5f5; border: 2px solid #ccc; width: 45px; height: 45px; border-radius: 50%; font-size: 1.8em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-seat.selected { background: #8b0000; color: white; }
-        .queue-card { background: white; border: 2px solid #d4b483; border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 8px; }
-        .queue-card.my-number { border: 4px solid #8b0000; }
-        .queue-card.called { border-color: #e67e22; background: #fff3cd; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        .complete-id { font-size: 5em; color: #8b0000; font-weight: bold; text-align: center; margin: 20px 0; }
-        .call-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e67e22; color: white; padding: 30px; border-radius: 20px; display: none; z-index: 10000; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        @media (max-width: 1000px) { .main-container { flex-direction: column; } .left-panel { width: 100%; border-right: none; border-bottom: 2px solid #d4b483; } }
+        .queue-card { background: white; border: 3px solid #d4b483; border-radius: 12px; padding: 12px; text-align: center; margin: 5px; cursor: pointer; transition: 0.2s; }
+        .queue-card.arrived { border-color: #27ae60; background: #d4edda; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
     </style>
 </head>
 <body>
-    <header><h1>🏮 松乃木飯店</h1><div style="font-size:0.9em;opacity:0.9;">ネット順番待ち受付</div></header>
-    <div id="callNotification" class="call-notification"><h2>📢 お呼び出しです</h2><p>店舗スタッフにお声がけください</p><button onclick="closeCallNotification()" style="width:100%; padding:15px; border-radius:10px; border:none; margin-top:15px; font-weight:bold; cursor:pointer;">確認しました</button></div>
+    <header><h1>🏪 松乃木飯店 店舗受付</h1></header>
     <div class="main-container">
         <div class="left-panel">
-            <div id="formArea" class="form-box">
-                <label class="control-label">📝 お名前 (任意)</label>
-                <input type="text" id="nameInput" placeholder="お名前" maxlength="20">
-                <label class="control-label">⏰ 到着予定時間 (10分刻み)</label>
-                <input type="time" id="targetTimeInput" step="600">
-                
-                <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                    <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
-                    <div style="display:flex; align-items:center; justify-content:center; gap:15px;">
-                        <button class="btn-step" onclick="changeNum('adults', -1)">-</button>
-                        <span id="display-adults" class="num-display">2</span>
-                        <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
-                    </div>
+            <h2 style="text-align:center; color:#8b0000; margin-bottom:15px;">👥 店頭受付</h2>
+            
+            <div style="margin-bottom:15px; text-align:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+                <label style="font-weight:bold;">大人人数：</label><br>
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-top:5px;">
+                    <button class="btn-step" onclick="changeNum('adults', -1)">-</button>
+                    <span id="display-adults" class="num-display">2</span>
+                    <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
                 </div>
-                <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                    <label class="control-label">👧 子供 (小学生以下)</label>
-                    <div style="display:flex; align-items:center; justify-content:center; gap:15px;">
-                        <span>子:</span><button class="btn-step" style="width:40px;height:40px;" onclick="changeNum('children', -1)">-</button><span id="display-children" style="font-size:1.5em;font-weight:bold;min-width:30px;text-align:center;">0</span><button class="btn-step" style="width:40px;height:40px;" onclick="changeNum('children', 1)">+</button>
-                        <span>幼:</span><button class="btn-step" style="width:40px;height:40px;" onclick="changeNum('infants', -1)">-</button><span id="display-infants" style="font-size:1.5em;font-weight:bold;min-width:30px;text-align:center;">0</span><button class="btn-step" style="width:40px;height:40px;" onclick="changeNum('infants', 1)">+</button>
-                    </div>
-                </div>
-                
-                <label class="control-label">🪑 座席の希望</label>
-                <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:15px;">
-                    <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                    <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                    <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                    <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
-                </div>
-                <button class="btn-submit" onclick="send()">✓ 受付確定</button>
             </div>
-            <div id="ticketArea" class="form-box" style="display:none; border:3px solid #8b0000;">
-                <p style="color:#27ae60; text-align:center; font-weight:bold;">✅ 受付完了しました</p>
-                <div id="num" class="complete-id">--</div>
-                <button class="btn-submit" style="background:#e74c3c; margin-bottom:10px;" onclick="cancelMyReservation()">✖ 予約をキャンセルする</button>
-                <button class="btn-submit" onclick="location.reload()" style="background:#666;">受付画面に戻る</button>
+
+            <div style="margin-bottom:15px; text-align:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+                <label style="font-weight:bold;">子供 (小学生以下)：</label><br>
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-top:5px;">
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('children', -1)">-</button>
+                    <span id="display-children" style="font-size:1.8em; font-weight:bold; min-width:40px;">0</span>
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('children', 1)">+</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px; text-align:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+                <label style="font-weight:bold;">幼児 (未就学児)：</label><br>
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-top:5px;">
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('infants', -1)">-</button>
+                    <span id="display-infants" style="font-size:1.8em; font-weight:bold; min-width:40px;">0</span>
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('infants', 1)">+</button>
+                </div>
+            </div>
+
+            <label style="font-weight:bold;">座席希望：</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0;">
+                <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
+                <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
+                <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
+                <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+            </div>
+            <button class="btn-submit" onclick="send()">✓ 受付確定 (発券)</button>
+            <div id="ticketArea" style="display:none; text-align:center; margin-top:20px; padding:20px; border:4px solid #8b0000; border-radius:15px;">
+                <h2 style="color:#27ae60;">受付完了！</h2>
+                <div id="num" style="font-size:4em; font-weight:bold; color:#8b0000;">--</div>
             </div>
         </div>
-        <div class="right-panel" style="flex:1; padding:20px; overflow-y:auto; background:white;">
-            <h2 style="color:#8b0000; margin-bottom:15px;">📋 待ち状況</h2><div id="queueList"></div>
+        <div class="right-panel" style="flex:1; padding:20px; background:rgba(255,255,255,0.9); color:black; overflow-y:auto;">
+            <h3>📱 ネット予約の方 (タップして到着)</h3>
+            <div id="queueListWeb" class="grid-container"></div>
+            <hr style="margin:20px 0; border:1px solid #ccc;">
+            <h3>🏪 店舗待ち状況</h3>
+            <div id="queueListShop" class="grid-container"></div>
         </div>
     </div>
     <script>
         const socket = io();
-        let nums = { adults: 2, children: 0, infants: 0 }, myNumber = null, selectedSeat = 'どこでも', soundEnabled = false;
+        let nums = { adults: 2, children: 0, infants: 0 }, selectedSeat = 'どこでも';
         function updateDisplays() { document.getElementById('display-adults').innerText = nums.adults; document.getElementById('display-children').innerText = nums.children; document.getElementById('display-infants').innerText = nums.infants; }
         function changeNum(k, s) { nums[k] = Math.max(k==='adults'?1:0, nums[k]+s); updateDisplays(); }
         function selectSeat(s) { selectedSeat = s; document.querySelectorAll('.btn-seat').forEach(b => b.classList.toggle('selected', b.innerText === s)); }
         socket.on('init', d => updateQueue(d));
         socket.on('update', d => updateQueue(d));
-        socket.on('guestCalled', d => { if (d.displayId === myNumber) showCallNotification(); });
         function updateQueue(d) {
-            const list = document.getElementById('queueList');
-            list.innerHTML = d.queue.map(g => `<div class="queue-card ${g.called?'called':''} ${g.displayId===myNumber?'my-number':''}">
-                <b style="font-size:1.4em; color:#8b0000;">${g.displayId}</b> (${g.adults+g.children+g.infants}名) ${g.targetTime?' [予定:'+g.targetTime+']':''}
-            </div>`).join('');
+            const render = (g) => `<div class="queue-card ${g.arrived?'arrived':''}" onclick="markArrived('${g.displayId}', ${g.arrived})">
+                <span style="font-weight:bold; font-size:1.6em; color:#8b0000;">${g.displayId}</span><br>
+                <span>${g.adults+g.children+g.infants}名 / ${g.pref}</span><br>
+                <span style="font-size:0.8em; color:#666;">${g.targetTime?'予定:'+g.targetTime:'🕐'+g.time}</span>
+            </div>`;
+            document.getElementById('queueListWeb').innerHTML = d.queue.filter(g => g.type === 'web').map(render).join('');
+            document.getElementById('queueListShop').innerHTML = d.queue.filter(g => g.type === 'shop').map(render).join('');
         }
-        function send() {
-            soundEnabled = true; 
-            const ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume();
-            if (window.speechSynthesis) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-            socket.emit('register', { type: 'web', ...nums, pref: selectedSeat, name: document.getElementById('nameInput').value.trim(), targetTime: document.getElementById('targetTimeInput').value });
-        }
-        function cancelMyReservation() { if (confirm('キャンセルしますか？')) { socket.emit('cancelReservation', { displayId: myNumber }); location.reload(); } }
-        function showCallNotification() {
-            document.getElementById('callNotification').style.display = 'block';
-            if (soundEnabled && window.speechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance(myNumber.replace('-', '番') + 'のお客様、順番になりました。店舗スタッフにお声がけください。');
-                utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
+        function markArrived(id, arrived) { if (arrived) return; socket.emit('markArrived', { displayId: id }); }
+        function send() { socket.emit('register', { type: 'shop', ...nums, pref: selectedSeat }); }
+        socket.on('registered', g => {
+            if (g.type === 'shop') {
+                document.getElementById('num').innerText = g.displayId;
+                document.getElementById('ticketArea').style.display = 'block';
+                setTimeout(() => { document.getElementById('ticketArea').style.display = 'none'; }, 4000);
             }
-        }
-        function closeCallNotification() { document.getElementById('callNotification').style.display = 'none'; }
-        socket.on('registered', g => { myNumber = g.displayId; document.getElementById('formArea').style.display = 'none'; document.getElementById('ticketArea').style.display = 'block'; document.getElementById('num').innerText = g.displayId; });
+        });
     </script>
 </body>
 </html>
