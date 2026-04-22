@@ -34,13 +34,14 @@ let waitTimes = [];
 let acceptanceTimer = null; 
 let absentTimers = {}; 
 
-// 💾 データの読み込み
 if (fs.existsSync(DATA_FILE)) {
     try {
         const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
         queue = data.queue || [];
         nextNumber = data.nextNumber || 1;
         stats = data.stats || stats;
+        if (stats.totalWebToday === undefined) stats.totalWebToday = 0;
+        if (stats.totalShopToday === undefined) stats.totalShopToday = 0;
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
         isAccepting = data.isAccepting !== undefined ? data.isAccepting : true;
         waitTimeDisplayEnabled = data.waitTimeDisplayEnabled !== undefined ? data.waitTimeDisplayEnabled : false;
@@ -52,7 +53,6 @@ function saveData() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// 🏮 通知機能
 async function sendLineNotification(messageText) {
     if (!LINE_ACCESS_TOKEN) return;
     try {
@@ -63,7 +63,7 @@ async function sendLineNotification(messageText) {
     } catch (e) { console.error("❌ LINE送信失敗:", e.response ? e.response.data : e.message); }
 }
 
-// 🖨 プリンター制御
+// 🖨 プリンター制御 (到着予定時刻を印字)
 function printTicket(guest) {
     if (!printerEnabled) return;
     try {
@@ -74,7 +74,7 @@ function printTicket(guest) {
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
         
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-        // 🌟 到着予定時間の表示を追加
+        // 🌟 到着予定時刻がある場合に印字
         const arrivalText = guest.targetTime ? `到着予定：${guest.targetTime}\n` : "";
         const footerText = `日時：${nowJst}\n${arrivalText}人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
         
@@ -117,35 +117,20 @@ io.on('connection', (socket) => {
         if (data.type === 'shop') { stats.totalShopToday++; } else { stats.totalWebToday++; }
         saveData();
 
-        // 店頭受付の場合は即時印刷
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
         
-        const msg = `【予約】${newGuest.displayId}\n${newGuest.targetTime ? '予定:'+newGuest.targetTime+'\n' : ''}人数:${data.adults}名\n${data.name || 'なし'}様`;
+        const msg = `【予約】${newGuest.displayId}\n到着:${data.targetTime || '未定'}\n人数:${data.adults}名\n${data.name || 'なし'}様`;
         sendLineNotification(msg);
+
         io.emit('update', { queue, stats });
         socket.emit('registered', newGuest);
     });
 
     socket.on('cancelReservation', ({ displayId }) => {
-        const idx = queue.findIndex(g => g.displayId === displayId);
-        if (idx !== -1) {
-            queue.splice(idx, 1);
-            if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
-            saveData();
-            io.emit('update', { queue, stats });
-        }
-    });
-
-    // 🌟 修正点：到着マーク時に発券も実行する
-    socket.on('markArrived', ({ displayId }) => {
-        const guest = queue.find(g => g.displayId === displayId);
-        if (guest) { 
-            guest.arrived = true; 
-            saveData(); 
-            if (printerEnabled) printTicket(guest); // タップ時に発券！
-            io.emit('update', { queue, stats }); 
-            io.emit('guestArrived', { displayId: guest.displayId });
-        }
+        queue = queue.filter(g => g.displayId !== displayId);
+        if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
+        saveData();
+        io.emit('update', { queue, stats });
     });
 
     socket.on('updateStatus', ({ displayId, status }) => {
@@ -165,12 +150,23 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('markArrived', ({ displayId }) => {
+        const guest = queue.find(g => g.displayId === displayId);
+        if (guest) { 
+            guest.arrived = true; 
+            saveData(); 
+            if (printerEnabled) printTicket(guest); // 店頭タップで発券
+            io.emit('update', { queue, stats }); 
+            io.emit('guestArrived', { displayId: guest.displayId });
+        }
+    });
+
     socket.on('callGuest', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
             guest.called = true; saveData();
             io.emit('update', { queue, stats });
-            io.emit('guestCalled', { displayId: guest.displayId, type: guest.type });
+            io.emit('guestCalled', { displayId: guest.displayId });
         }
     });
 
@@ -186,7 +182,6 @@ io.on('connection', (socket) => {
     socket.on('setPrinterEnabled', ({ enabled }) => { printerEnabled = enabled; saveData(); io.emit('printerStatusChanged', { printerEnabled }); });
     socket.on('setWaitTimeDisplay', ({ enabled }) => { waitTimeDisplayEnabled = enabled; saveData(); io.emit('waitTimeDisplayChanged', { waitTimeDisplayEnabled, queue }); });
     socket.on('resetStats', () => { stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 }; waitTimes = []; saveData(); io.emit('update', { queue, stats }); });
-    socket.on('resetQueueNumber', () => { if (queue.length === 0) { nextNumber = 1; saveData(); io.emit('queueNumberReset', { nextNumber }); } else { socket.emit('error', { message: '待ち客がいる間はリセットできません' }); } });
 });
 
 setInterval(() => {
@@ -199,4 +194,4 @@ setInterval(() => {
 }, 60000);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => console.log(`🚀 System Running on Port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server on Port ${PORT}`));
