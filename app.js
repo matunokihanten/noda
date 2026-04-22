@@ -27,7 +27,6 @@ let nextNumber = 1;
 let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
 let printerEnabled = true;
 let isAccepting = true;
-
 let waitTimes = []; 
 let acceptanceTimer = null; 
 let absentTimers = {}; 
@@ -40,7 +39,7 @@ if (fs.existsSync(DATA_FILE)) {
         stats = data.stats || stats;
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
         isAccepting = data.isAccepting !== undefined ? data.isAccepting : true;
-    } catch (e) { console.error("データ読込エラー:", e); }
+    } catch (e) { console.error("Data Load Error:", e); }
 }
 
 function saveData() {
@@ -55,7 +54,7 @@ async function sendLineNotification(messageText) {
         { messages: [{ type: 'text', text: messageText }] },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_ACCESS_TOKEN}` } }
         );
-    } catch (e) { console.error("❌ LINE送信失敗:", e.response ? e.response.data : e.message); }
+    } catch (e) { console.error("❌ LINE Fail:", e.message); }
 }
 
 function printTicket(guest) {
@@ -67,12 +66,13 @@ function printTicket(guest) {
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        const nameText = guest.name ? `様名：${guest.name} 様\n` : "";
         const arrivalText = guest.targetTime ? `到着予定：${guest.targetTime}\n` : "";
-        const footerText = `日時：${nowJst}\n${arrivalText}人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
+        const footerText = `日時：${nowJst}\n${nameText}${arrivalText}人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\n\n\n\n`;
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
         const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
         fs.writeFileSync(PRINT_JOB_FILE, Buffer.concat([initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd]));
-    } catch (e) { console.error("印刷エラー:", e); }
+    } catch (e) { console.error("Print Error:", e); }
 }
 
 app.post('/cloudprnt', (req, res) => res.json({ jobReady: fs.existsSync(PRINT_JOB_FILE), mediaTypes: ["application/vnd.star.starprnt"] }));
@@ -88,22 +88,21 @@ app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.u
 io.on('connection', (socket) => {
     socket.emit('init', { isAccepting, queue, stats, printerEnabled });
 
-    socket.on('register', async (data) => {
+    socket.on('register', (data) => {
         if (!isAccepting) return;
         const prefix = data.type === 'shop' ? 'S' : 'W';
         const newGuest = { 
-            displayId: `${prefix}-${nextNumber++}`, 
-            ...data, 
+            displayId: `${prefix}-${nextNumber++}`, ...data, 
             timestamp: Date.now(), 
             time: new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-            arrived: data.type === 'shop',
-            called: false
+            arrived: data.type === 'shop', called: false
         };
         queue.push(newGuest);
         stats.totalToday++;
-        if (data.type === 'shop') { stats.totalShopToday++; } else { stats.totalWebToday++; }
+        if (data.type === 'shop') stats.totalShopToday++; else stats.totalWebToday++;
         saveData();
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
+        sendLineNotification(`【予約】${newGuest.displayId}\n到着:${data.targetTime || 'すぐ'}\n人数:${data.adults}名\n${data.name || 'なし'}様`);
         io.emit('update', { queue, stats });
         socket.emit('registered', newGuest);
     });
@@ -111,8 +110,7 @@ io.on('connection', (socket) => {
     socket.on('cancelReservation', ({ displayId }) => {
         queue = queue.filter(g => g.displayId !== displayId);
         if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
-        saveData();
-        io.emit('update', { queue, stats });
+        saveData(); io.emit('update', { queue, stats });
     });
 
     socket.on('updateStatus', ({ displayId, status }) => {
@@ -127,8 +125,7 @@ io.on('connection', (socket) => {
             queue = queue.filter(g => g.displayId !== displayId);
             stats.completedToday++;
             if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
-            saveData();
-            io.emit('update', { queue, stats });
+            saveData(); io.emit('update', { queue, stats });
         }
     });
 
@@ -137,8 +134,7 @@ io.on('connection', (socket) => {
         if (guest) { 
             guest.arrived = true; saveData(); 
             if (printerEnabled) printTicket(guest);
-            io.emit('update', { queue, stats }); 
-            io.emit('guestArrived', { displayId: guest.displayId });
+            io.emit('update', { queue, stats }); io.emit('guestArrived', { displayId: guest.displayId });
         }
     });
 
@@ -195,4 +191,4 @@ setInterval(() => {
 }, 60000);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on Port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Port ${PORT}`));
