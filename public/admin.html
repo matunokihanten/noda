@@ -1,87 +1,106 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>松乃木飯店 管理画面</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>松乃木飯店 店舗受付</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
-        .stat-value { font-size: 2.2em; font-weight: bold; color: #8b0000; }
-        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
-        .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-        .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .admin-card { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 15px; position: relative; transition: 0.2s; }
-        .admin-card.called { border-color: #e67e22; background: #fffbeb; }
-        .admin-card.absent { border-color: #e74c3c; background: #fef2f2; opacity: 0.8; }
-        .arrival-badge { background: #d35400; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.9em; position: absolute; top: 10px; right: 10px; font-weight: bold; }
-        button { cursor: pointer; padding: 10px; border-radius: 8px; border: none; font-weight: bold; width: 100%; margin-top: 5px; transition: 0.2s; }
-        .btn-call { background: #e67e22; color: white; }
-        .btn-complete { background: #2ecc71; color: white; }
-        .btn-absent { background: #e74c3c; color: white; width: 48%; }
-        .btn-cancel { background: #3498db; color: white; width: 48%; }
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: white; margin-top: 5px; font-weight: bold; }
+        body { font-family: sans-serif; background: #1e3c72; color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: #8b0000; padding: 15px; text-align: center; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .left-panel { width: 450px; background: white; color: black; padding: 20px; border-right: 5px solid #8b0000; overflow-y: auto; }
+        .btn-submit { background: #8b0000; color: white; border: none; padding: 20px; width: 100%; font-size: 1.5em; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        .num-display { font-size: 2.2em; font-weight: bold; min-width: 60px; text-align: center; color: #8b0000; }
+        .btn-step { background: #f5f5f5; border: 2px solid #ccc; width: 45px; height: 45px; border-radius: 50%; font-size: 1.8em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-seat.selected { background: #8b0000; color: white; }
+        .queue-card { background: white; border: 3px solid #d4b483; border-radius: 12px; padding: 12px; text-align: center; margin: 5px; cursor: pointer; transition: 0.2s; }
+        .queue-card.arrived { border-color: #27ae60; background: #d4edda; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
     </style>
 </head>
 <body>
-    <div class="header"><h1>🏮 松乃木飯店 管理画面</h1><div id="clock" style="font-size:1.5em; font-weight:bold;">00:00:00</div></div>
-    <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value" id="qCount">0</div><div>待ち</div></div>
-        <div class="stat-card"><div class="stat-value" id="webToday">0</div><div style="color:#9b59b6; font-size:0.8em; font-weight:bold;">ネット受付</div></div>
-        <div class="stat-card"><div class="stat-value" id="shopToday">0</div><div style="color:#3498db; font-size:0.8em; font-weight:bold;">店舗受付</div></div>
-        <div class="stat-card"><div class="stat-value" id="allToday">0</div><div>本日合計</div></div>
-        <div class="stat-card"><div class="stat-value" id="doneToday">0</div><div>案内完了</div></div>
-        <div class="stat-card"><div class="stat-value" id="avgWait">0</div><div>平均待ち(分)</div></div>
-    </div>
-    <div class="card">
-        <h2>⚙️ システム設定</h2>
-        <div class="setting-control"><label>🔔 通知音 (MP3): </label><input type="checkbox" id="soundOn" checked style="width:25px;height:25px;"></div>
-        <div class="setting-control" style="background:#fff3e0;"><label>⏱️ 通知音の長さ: </label><input type="range" id="soundLen" min="1" max="10" value="3" oninput="document.getElementById('lenLabel').innerText=this.value+'秒'"><span id="lenLabel">3秒</span></div>
-    </div>
-    <div class="card">
-        <h2>📋 受付コントロール</h2>
-        <div id="statusLabel" style="padding:10px; border-radius:8px; text-align:center; font-weight:bold; margin-bottom:10px;">状態確認中...</div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button style="width:auto; background:#e74c3c; color:white;" onclick="socket.emit('setAcceptance',{status:false,duration:0})">停止</button>
-            <button style="width:auto; background:#27ae60; color:white;" onclick="socket.emit('setAcceptance',{status:true,duration:0})">再開</button>
-            <button style="width:auto; background:#95a5a6; color:white;" onclick="if(confirm('リセットしますか？'))socket.emit('resetStats')">統計リセット</button>
-            <button style="width:auto; background:#c0392b; color:white;" onclick="if(confirm('1に戻しますか？'))socket.emit('resetQueueNumber')">番号1へ</button>
+    <header><h1>🏪 松乃木飯店 店舗受付</h1></header>
+    <div class="main-container">
+        <div class="left-panel">
+            <h2 style="text-align:center; color:#8b0000; margin-bottom:15px;">👥 店頭受付</h2>
+            
+            <div style="margin-bottom:15px; text-align:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+                <label style="font-weight:bold;">大人人数：</label><br>
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-top:5px;">
+                    <button class="btn-step" onclick="changeNum('adults', -1)">-</button>
+                    <span id="display-adults" class="num-display">2</span>
+                    <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px; text-align:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+                <label style="font-weight:bold;">子供 (小学生以下)：</label><br>
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-top:5px;">
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('children', -1)">-</button>
+                    <span id="display-children" style="font-size:1.8em; font-weight:bold; min-width:40px;">0</span>
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('children', 1)">+</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px; text-align:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+                <label style="font-weight:bold;">幼児 (未就学児)：</label><br>
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-top:5px;">
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('infants', -1)">-</button>
+                    <span id="display-infants" style="font-size:1.8em; font-weight:bold; min-width:40px;">0</span>
+                    <button class="btn-step" style="width:40px; height:40px;" onclick="changeNum('infants', 1)">+</button>
+                </div>
+            </div>
+
+            <label style="font-weight:bold;">座席希望：</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0;">
+                <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
+                <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
+                <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
+                <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+            </div>
+            <button class="btn-submit" onclick="send()">✓ 受付確定 (発券)</button>
+            <div id="ticketArea" style="display:none; text-align:center; margin-top:20px; padding:20px; border:4px solid #8b0000; border-radius:15px;">
+                <h2 style="color:#27ae60;">受付完了！</h2>
+                <div id="num" style="font-size:4em; font-weight:bold; color:#8b0000;">--</div>
+            </div>
+        </div>
+        <div class="right-panel" style="flex:1; padding:20px; background:rgba(255,255,255,0.9); color:black; overflow-y:auto;">
+            <h3>📱 ネット予約の方 (タップして到着)</h3>
+            <div id="queueListWeb" class="grid-container"></div>
+            <hr style="margin:20px 0; border:1px solid #ccc;">
+            <h3>🏪 店舗待ち状況</h3>
+            <div id="queueListShop" class="grid-container"></div>
         </div>
     </div>
-    <div class="admin-grid" id="list"></div>
     <script>
         const socket = io();
-        let lastLen = 0, audio = null;
-        socket.on('init', d => { updateUI(d); updateStatusUI(d.isAccepting); });
-        socket.on('update', d => { if (d.queue.length > lastLen && document.getElementById('soundOn').checked) playSound(); lastLen = d.queue.length; updateUI(d); });
-        socket.on('statusChange', s => updateStatusUI(s.isAccepting));
-        function updateUI(d) {
-            document.getElementById('qCount').innerText = d.queue.length;
-            document.getElementById('webToday').innerText = d.stats.totalWebToday || 0;
-            document.getElementById('shopToday').innerText = d.stats.totalShopToday || 0;
-            document.getElementById('allToday').innerText = d.stats.totalToday;
-            document.getElementById('doneToday').innerText = d.stats.completedToday;
-            document.getElementById('avgWait').innerText = d.stats.averageWaitTime || 0;
-            const list = document.getElementById('list');
-            list.innerHTML = d.queue.map(g => `<div class="admin-card ${g.called?'called':''} ${g.absent?'absent':''}">
-                <div class="arrival-badge">${g.targetTime?'⏰ '+g.targetTime:'🕒すぐ'}</div>
-                <div style="font-size:1.6em; font-weight:bold; color:#8b0000;">${g.displayId}</div>
-                <div style="font-weight:bold;">${g.name || '名前なし'} 様</div>
-                <div style="font-size:0.85em; color:#666;">👥 大人${g.adults}/子${g.children}/幼${g.infants} | 🪑 ${g.pref}</div>
-                ${g.called?'<span class="status-badge" style="background:#e67e22;">📢呼出中</span>':''}
-                ${g.absent?'<span class="status-badge" style="background:#e74c3c;">⚠️不在(10分後消)</span>':''}
-                <div style="display:flex; justify-content:space-between; margin-top:10px;">
-                    ${g.absent?`<button class="btn-cancel" onclick="socket.emit('cancelAbsent',{displayId:'${g.displayId}'})">不在解除</button>`:`<button class="btn-absent" onclick="socket.emit('markAbsent',{displayId:'${g.displayId}'})">不在</button>`}
-                    <button style="width:48%; background:#f39c12; color:white;" onclick="socket.emit('callGuest',{displayId:'${g.displayId}'})">📢呼出</button>
-                </div>
-                <button class="btn-complete" onclick="if(confirm('完了しますか？'))socket.emit('updateStatus',{displayId:'${g.displayId}',status:'completed'})">✓ 案内完了</button>
-            </div>`).join('');
+        let nums = { adults: 2, children: 0, infants: 0 }, selectedSeat = 'どこでも';
+        function updateDisplays() { document.getElementById('display-adults').innerText = nums.adults; document.getElementById('display-children').innerText = nums.children; document.getElementById('display-infants').innerText = nums.infants; }
+        function changeNum(k, s) { nums[k] = Math.max(k==='adults'?1:0, nums[k]+s); updateDisplays(); }
+        function selectSeat(s) { selectedSeat = s; document.querySelectorAll('.btn-seat').forEach(b => b.classList.toggle('selected', b.innerText === s)); }
+        socket.on('init', d => updateQueue(d));
+        socket.on('update', d => updateQueue(d));
+        function updateQueue(d) {
+            const render = (g) => `<div class="queue-card ${g.arrived?'arrived':''}" onclick="markArrived('${g.displayId}', ${g.arrived})">
+                <span style="font-weight:bold; font-size:1.6em; color:#8b0000;">${g.displayId}</span><br>
+                <span>${g.adults+g.children+g.infants}名 / ${g.pref}</span><br>
+                <span style="font-size:0.8em; color:#666;">${g.targetTime?'予定:'+g.targetTime:'🕐'+g.time}</span>
+            </div>`;
+            document.getElementById('queueListWeb').innerHTML = d.queue.filter(g => g.type === 'web').map(render).join('');
+            document.getElementById('queueListShop').innerHTML = d.queue.filter(g => g.type === 'shop').map(render).join('');
         }
-        function updateStatusUI(is) { const l = document.getElementById('statusLabel'); l.innerText = is ? "✅ 受付中" : "⏸️ 受付停止中"; l.style.background = is ? "#d4edda" : "#f8d7da"; l.style.color = is ? "#155724" : "#721c24"; }
-        function playSound() { if (audio) audio.pause(); audio = new Audio('/1772254751_69a2761f6afb8.mp3'); audio.loop = true; audio.play(); const sec = parseInt(document.getElementById('soundLen').value); setTimeout(() => { if(audio) { audio.pause(); audio.currentTime=0; } }, sec * 1000); }
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('ja-JP'); }, 1000);
+        function markArrived(id, arrived) { if (arrived) return; socket.emit('markArrived', { displayId: id }); }
+        function send() { socket.emit('register', { type: 'shop', ...nums, pref: selectedSeat }); }
+        socket.on('registered', g => {
+            if (g.type === 'shop') {
+                document.getElementById('num').innerText = g.displayId;
+                document.getElementById('ticketArea').style.display = 'block';
+                setTimeout(() => { document.getElementById('ticketArea').style.display = 'none'; }, 4000);
+            }
+        });
     </script>
 </body>
 </html>
