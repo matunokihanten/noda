@@ -12,10 +12,8 @@
         header h1 { margin: 0; font-size: 1.8em; font-weight: bold; }
         header .subtitle { font-size: 1em; opacity: 0.9; margin-top: 5px; }
         
-        /* ★修正: 高さを明示的に計算し、確実にスクロールが機能するようにしました */
         .main-container { display: flex; flex: 1; overflow: hidden; height: calc(100% - 80px); }
         
-        /* ★修正: 下部に余裕（padding-bottom: 50px）を持たせ、ボタンが埋もれないようにしました */
         .left-panel { width: 450px; padding: 15px 15px 50px 15px; background: white; border-right: 3px solid #8b0000; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
         .section { background: #f8f9fa; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -25,7 +23,6 @@
         
         input[type="text"] { padding: 10px; margin: 8px 0; width: 100%; font-size: 1em; border: 2px solid #ddd; border-radius: 8px; }
         
-        /* 人数入力（コンパクト化） */
         .number-control { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
         .control-label { font-size: 0.9em; font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
         .control-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; }
@@ -36,18 +33,15 @@
         .btn-quick { background: #fff; border: 2px solid #d4b483; padding: 6px 12px; border-radius: 6px; font-size: 0.85em; cursor: pointer; transition: all 0.2s; font-weight: 600; }
         .btn-quick:hover { background: #d4b483; color: white; }
 
-        /* 座席ボタン */
         .seat-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0; }
         .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 12px; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s; font-weight: 600; text-align: center; }
         .btn-seat:hover { transform: translateY(-2px); }
         .btn-seat.selected { background: #8b0000; color: white; border-color: #8b0000; }
         
-        /* ボタンを見つけやすく少し目立たせています */
         .btn-submit { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; border: none; padding: 15px; width: 100%; font-size: 1.2em; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 3px 8px rgba(139, 0, 0, 0.3); margin-top: 10px; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(139, 0, 0, 0.4); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
-        /* 右側：待ち状況 */
         .right-panel { flex: 1; padding: 15px; overflow-y: auto; background: rgba(255,255,255,0.95); }
         
         .queue-section { margin-bottom: 20px; }
@@ -75,7 +69,6 @@
         .complete-id { font-size: 4em; color: #8b0000; font-weight: bold; text-align: center; margin: 15px 0; }
         .stop-message { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 0.95em; }
 
-        /* タブレット・スマホ用のレスポンシブ対応追加 */
         @media (max-width: 800px) {
             .main-container { flex-direction: column; }
             .left-panel { width: 100%; border-right: none; border-bottom: 3px solid #8b0000; max-height: 50vh; }
@@ -236,6 +229,9 @@
                     
                     const nameDisplay = g.name ? `<div style="font-size:0.85em;color:#8b0000;font-weight:bold;">${g.name}様</div>` : '';
                     
+                    // 到着予想時刻があれば表示
+                    const arrivalDisplay = g.arrivalTime ? `<div style="color:#d35400;font-weight:bold;margin-bottom:3px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
+                    
                     return `
                         <div class="queue-card ${cardClass}" onclick="markArrived('${g.displayId}', ${g.arrived})">
                             <span class="queue-id">${g.displayId}</span>
@@ -243,6 +239,7 @@
                             <div class="queue-info">
                                 👥 ${g.adults}名 / ${g.children}名 / ${g.infants}名<br>
                                 🪑 ${g.pref}<br>
+                                ${arrivalDisplay}
                                 🕐 ${g.time}
                             </div>
                             ${statusBadge}
@@ -304,10 +301,8 @@
             playSound('arrival');
         });
 
-        // 管理画面から呼び出しがあった時に店舗タブレットでも音声を鳴らす
         socket.on('guestCalled', data => {
             playSound('call');
-            console.log('📢 呼び出し通知:', data.displayId);
         });
 
         socket.on('dailyReset', () => {
@@ -336,12 +331,9 @@
             }
             
             const name = document.getElementById('nameInput').value.trim();
-            const nameText = name ? `${name}様 ` : '';
-            const confirmation = `${nameText}大人${nums.adults}名、子供${nums.children}名、幼児${nums.infants}名、座席「${selectedSeat}」で受付しますか？`;
             
-            if (confirm(confirmation)) {
-                socket.emit('register', { type, ...nums, pref: selectedSeat, name });
-            }
+            // 💡 修正：確認ダイアログ（confirm）を削除し、すぐに発券処理へ進みます
+            socket.emit('register', { type, ...nums, pref: selectedSeat, name });
         }
 
         function closeTicket() {
@@ -379,14 +371,12 @@
             gainNode.connect(audioContext.destination);
             
             if (type === 'call') {
-                // 呼び出し音（管理画面からの呼び出し）
                 oscillator.frequency.value = 880;
                 gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.5);
             } else if (type === 'arrival') {
-                // 到着音
                 oscillator.frequency.value = 800;
                 gainNode.gain.value = 0.3;
                 oscillator.start(audioContext.currentTime);
