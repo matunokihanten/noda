@@ -6,18 +6,23 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; }
+        .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
         .stat-value { font-size: 2.2em; font-weight: bold; color: #8b0000; }
+        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .admin-card { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 15px; position: relative; }
+        .admin-card { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 15px; position: relative; transition: 0.2s; }
         .admin-card.called { border-color: #e67e22; background: #fffbeb; }
+        .admin-card.absent { border-color: #e74c3c; background: #fef2f2; opacity: 0.8; }
         .arrival-badge { background: #d35400; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.9em; position: absolute; top: 10px; right: 10px; font-weight: bold; }
-        button { cursor: pointer; padding: 10px; border-radius: 8px; border: none; font-weight: bold; width: 100%; margin-top: 5px; }
+        button { cursor: pointer; padding: 10px; border-radius: 8px; border: none; font-weight: bold; width: 100%; margin-top: 5px; transition: 0.2s; }
         .btn-call { background: #e67e22; color: white; }
         .btn-complete { background: #2ecc71; color: white; }
-        .setting-control { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .btn-absent { background: #e74c3c; color: white; width: 48%; }
+        .btn-cancel { background: #3498db; color: white; width: 48%; }
+        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: white; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -30,18 +35,28 @@
         <div class="stat-card"><div class="stat-value" id="doneToday">0</div><div>案内完了</div></div>
         <div class="stat-card"><div class="stat-value" id="avgWait">0</div><div>平均待ち(分)</div></div>
     </div>
-    <div class="setting-control">
-        <label style="font-weight:bold;">🔔 通知音 (MP3): </label><input type="checkbox" id="soundOn" checked style="width:25px; height:25px;">
+    <div class="card">
+        <h2>⚙️ システム設定</h2>
+        <div class="setting-control"><label>🔔 通知音 (MP3): </label><input type="checkbox" id="soundOn" checked style="width:25px;height:25px;"></div>
+        <div class="setting-control" style="background:#fff3e0;"><label>⏱️ 通知音の長さ: </label><input type="range" id="soundLen" min="1" max="10" value="3" oninput="document.getElementById('lenLabel').innerText=this.value+'秒'"><span id="lenLabel">3秒</span></div>
+    </div>
+    <div class="card">
+        <h2>📋 受付コントロール</h2>
+        <div id="statusLabel" style="padding:10px; border-radius:8px; text-align:center; font-weight:bold; margin-bottom:10px;">状態確認中...</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button style="width:auto; background:#e74c3c; color:white;" onclick="socket.emit('setAcceptance',{status:false,duration:0})">停止</button>
+            <button style="width:auto; background:#27ae60; color:white;" onclick="socket.emit('setAcceptance',{status:true,duration:0})">再開</button>
+            <button style="width:auto; background:#95a5a6; color:white;" onclick="if(confirm('リセットしますか？'))socket.emit('resetStats')">統計リセット</button>
+            <button style="width:auto; background:#c0392b; color:white;" onclick="if(confirm('1に戻しますか？'))socket.emit('resetQueueNumber')">番号1へ</button>
+        </div>
     </div>
     <div class="admin-grid" id="list"></div>
     <script>
         const socket = io();
         let lastLen = 0, audio = null;
-        socket.on('init', d => updateUI(d));
-        socket.on('update', d => {
-            if (d.queue.length > lastLen && document.getElementById('soundOn').checked) playSound();
-            lastLen = d.queue.length; updateUI(d);
-        });
+        socket.on('init', d => { updateUI(d); updateStatusUI(d.isAccepting); });
+        socket.on('update', d => { if (d.queue.length > lastLen && document.getElementById('soundOn').checked) playSound(); lastLen = d.queue.length; updateUI(d); });
+        socket.on('statusChange', s => updateStatusUI(s.isAccepting));
         function updateUI(d) {
             document.getElementById('qCount').innerText = d.queue.length;
             document.getElementById('webToday').innerText = d.stats.totalWebToday || 0;
@@ -50,15 +65,22 @@
             document.getElementById('doneToday').innerText = d.stats.completedToday;
             document.getElementById('avgWait').innerText = d.stats.averageWaitTime || 0;
             const list = document.getElementById('list');
-            list.innerHTML = d.queue.map(g => `<div class="admin-card ${g.called?'called':''}">
-                <div class="arrival-badge">${g.targetTime?'⏰予定 '+g.targetTime:'🕒すぐ来店'}</div>
-                <div style="font-size:1.5em; font-weight:bold; color:#8b0000;">${g.displayId}</div>
-                <div>${g.name || '名前なし'} 様 (${g.adults}名)</div>
-                <button class="btn-call" onclick="socket.emit('callGuest', {displayId:'${g.displayId}'})">📢 呼出</button>
-                <button class="btn-complete" onclick="socket.emit('updateStatus', {displayId:'${g.displayId}', status:'completed'})">✓ 案内完了</button>
+            list.innerHTML = d.queue.map(g => `<div class="admin-card ${g.called?'called':''} ${g.absent?'absent':''}">
+                <div class="arrival-badge">${g.targetTime?'⏰ '+g.targetTime:'🕒すぐ'}</div>
+                <div style="font-size:1.6em; font-weight:bold; color:#8b0000;">${g.displayId}</div>
+                <div style="font-weight:bold;">${g.name || '名前なし'} 様</div>
+                <div style="font-size:0.85em; color:#666;">👥 大人${g.adults}/子${g.children}/幼${g.infants} | 🪑 ${g.pref}</div>
+                ${g.called?'<span class="status-badge" style="background:#e67e22;">📢呼出中</span>':''}
+                ${g.absent?'<span class="status-badge" style="background:#e74c3c;">⚠️不在(10分後消)</span>':''}
+                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                    ${g.absent?`<button class="btn-cancel" onclick="socket.emit('cancelAbsent',{displayId:'${g.displayId}'})">不在解除</button>`:`<button class="btn-absent" onclick="socket.emit('markAbsent',{displayId:'${g.displayId}'})">不在</button>`}
+                    <button style="width:48%; background:#f39c12; color:white;" onclick="socket.emit('callGuest',{displayId:'${g.displayId}'})">📢呼出</button>
+                </div>
+                <button class="btn-complete" onclick="if(confirm('完了しますか？'))socket.emit('updateStatus',{displayId:'${g.displayId}',status:'completed'})">✓ 案内完了</button>
             </div>`).join('');
         }
-        function playSound() { if (audio) audio.pause(); audio = new Audio('/1772254751_69a2761f6afb8.mp3'); audio.play(); setTimeout(() => { if(audio) audio.pause(); }, 3000); }
+        function updateStatusUI(is) { const l = document.getElementById('statusLabel'); l.innerText = is ? "✅ 受付中" : "⏸️ 受付停止中"; l.style.background = is ? "#d4edda" : "#f8d7da"; l.style.color = is ? "#155724" : "#721c24"; }
+        function playSound() { if (audio) audio.pause(); audio = new Audio('/1772254751_69a2761f6afb8.mp3'); audio.loop = true; audio.play(); const sec = parseInt(document.getElementById('soundLen').value); setTimeout(() => { if(audio) { audio.pause(); audio.currentTime=0; } }, sec * 1000); }
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('ja-JP'); }, 1000);
     </script>
 </body>
