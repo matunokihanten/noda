@@ -13,7 +13,23 @@
         header .subtitle { font-size: 1em; opacity: 0.9; margin-top: 5px; font-weight: bold; }
         header .info-text { font-size: 0.9em; margin-top: 5px; opacity: 0.9; }
         
-        .main-container { display: flex; flex: 1; height: calc(100vh - 100px); }
+        /* ★ ヘッダーの待ち組数表示用のスタイル ★ */
+        .header-queue-count {
+            margin-top: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.15);
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .header-queue-count span {
+            font-size: 1.4em;
+            color: #ffd700;
+        }
+        
+        .main-container { display: flex; flex: 1; height: calc(100vh - 120px); }
 
         .left-panel { width: 420px; padding: 20px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
         .form-box { background: white; padding: 20px; border-radius: 20px; width: 100%; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -116,6 +132,7 @@
         <h1>🏮 松乃木飯店</h1>
         <div class="subtitle">ネット順番待ち受付</div>
         <div class="info-text">順番に、ご案内いたします。</div>
+        <div class="header-queue-count">現在お待ちのお客様： <span id="headerCount">0</span> 組</div>
     </header>
     
     <div id="callNotification" class="call-notification">
@@ -278,7 +295,10 @@
         socket.on('update', d => updateQueue(d));
 
         function updateQueue(d) {
+            // 右パネルの待ち組数と、ヘッダーの待ち組数の両方を更新します
             document.getElementById('count').innerText = d.queue.length;
+            document.getElementById('headerCount').innerText = d.queue.length;
+            
             const list = document.getElementById('queueList');
             
             if (d.queue.length === 0) {
@@ -385,7 +405,6 @@
         function updateAcceptanceUI() {
             const btn = document.getElementById('regBtn');
             const msg = document.getElementById('stopMessage');
-            // 営業時間制限を解除しました。常に現在のシステム状態(isAccepting)に従います。
             btn.disabled = !isAccepting;
             btn.innerText = isAccepting ? "✓ 受付確定" : "⏸️ 受付停止中";
             msg.style.display = isAccepting ? 'none' : 'block';
