@@ -7,7 +7,6 @@
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        /* ★修正: 100dvhを追加し、スマホのバー表示/非表示に対応 */
         body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #fdfaf5; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
         header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         header h1 { margin: 0; font-size: 1.5em; font-weight: bold; line-height: 1.2; }
@@ -48,10 +47,8 @@
             background: #fff;
         }
         
-        /* ★修正: 固定高さの計算をやめ、自動で余白を埋める設定に変更 */
         .main-container { display: flex; flex: 1; overflow: hidden; }
 
-        /* ★修正: 下部に十分な余白(60px)を持たせ、ボタンが確実に表示されるように変更 */
         .left-panel { width: 420px; padding: 20px 20px 60px 20px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
         .form-box { background: white; padding: 20px; border-radius: 20px; width: 100%; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
@@ -141,7 +138,6 @@
 
         .stop-message { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; }
 
-        /* ★修正: スマホ等の小さい画面時、入力パネルと待ちパネルが適切にスクロールするように高さを設定 */
         @media (max-width: 1000px) { 
             .main-container { flex-direction: column; }
             .left-panel { width: 100%; border-right: none; border-bottom: 2px solid #d4b483; max-height: 55vh; }
@@ -264,6 +260,7 @@
         let myNumber = null;
         let selectedSeat = 'どこでも';
         let soundEnabled = false;
+        let waitTimeDisplayEnabled = false; // ★ 待ち時間目安のON/OFF状態を管理する変数を追加
 
         function loadMyNumber() {
             const saved = localStorage.getItem('myQueueNumber');
@@ -313,11 +310,23 @@
 
         socket.on('init', d => {
             isAccepting = d.isAccepting;
+            // ★ 初期ロード時に管理画面の設定状態を受け取る
+            if (d.waitTimeDisplayEnabled !== undefined) {
+                waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
+            }
             updateAcceptanceUI();
             updateQueue(d);
         });
 
         socket.on('update', d => updateQueue(d));
+
+        // ★ 管理画面で設定が変更された時にリアルタイムで受け取る処理を追加
+        socket.on('waitTimeDisplayChanged', data => {
+            waitTimeDisplayEnabled = data.waitTimeDisplayEnabled;
+            if (data.queue) {
+                updateQueue({ queue: data.queue }); // 画面の表示を更新
+            }
+        });
 
         function updateQueue(d) {
             document.getElementById('count').innerText = d.queue.length;
@@ -344,7 +353,8 @@
                     }
                     
                     let waitTimeInfo = '';
-                    if (g.estimatedWait && g.estimatedWait > 0) {
+                    // ★ waitTimeDisplayEnabled が true の時だけ表示するように変更
+                    if (waitTimeDisplayEnabled && g.estimatedWait && g.estimatedWait > 0) {
                         waitTimeInfo = `<div class="estimated-wait">⏱️ 約${g.estimatedWait}分</div>`;
                     }
                     
@@ -486,7 +496,9 @@
             document.getElementById('ticketArea').style.display='block';
             document.getElementById('num').innerText = g.displayId;
             const waitTimeInfo = document.getElementById('waitTimeInfo');
-            if (g.estimatedWait && g.estimatedWait > 0) {
+            
+            // ★ waitTimeDisplayEnabled が true の時だけ表示するように変更
+            if (waitTimeDisplayEnabled && g.estimatedWait && g.estimatedWait > 0) {
                 waitTimeInfo.innerHTML = `⏱️ 待ち時間目安: 約${g.estimatedWait}分<br><span style="font-size:0.8em; color:#999;">※混雑状況により前後します</span>`;
             } else {
                 waitTimeInfo.innerHTML = '';
