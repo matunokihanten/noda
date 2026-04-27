@@ -30,6 +30,7 @@ const PRINT_JOB_FILE = path.join(__dirname, 'print_job.bin');
 let queue = [];
 let nextNumber = 1;
 let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
+let completedHistory = []; // ★ 案内完了履歴を保持する配列を追加
 let printerEnabled = true;
 let isAccepting = true;
 let waitTimeDisplayEnabled = false;
@@ -45,6 +46,7 @@ if (fs.existsSync(DATA_FILE)) {
         queue = data.queue || [];
         nextNumber = data.nextNumber || 1;
         stats = data.stats || stats;
+        completedHistory = data.completedHistory || []; // ★ 履歴を読み込み
         if (stats.totalWebToday === undefined) stats.totalWebToday = 0;
         if (stats.totalShopToday === undefined) stats.totalShopToday = 0;
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
@@ -54,7 +56,7 @@ if (fs.existsSync(DATA_FILE)) {
 }
 
 function saveData() {
-    const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled };
+    const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled, completedHistory }; // ★ 履歴を保存
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -114,7 +116,8 @@ app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.u
 
 // 💬 Socket.io 通信
 io.on('connection', (socket) => {
-    socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled });
+    // ★ completedHistoryを追加して送信
+    socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled, completedHistory });
 
     // 新規登録
     socket.on('register', async (data) => {
@@ -145,7 +148,7 @@ io.on('connection', (socket) => {
         sendLineNotification(msg);
         sendEmailBackup(`新規受付 ${newGuest.displayId}`, msg);
 
-        io.emit('update', { queue, stats });
+        io.emit('update', { queue, stats, completedHistory });
         socket.emit('registered', newGuest);
     });
 
@@ -156,7 +159,7 @@ io.on('connection', (socket) => {
             queue.splice(guestIndex, 1);
             if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
             saveData();
-            io.emit('update', { queue, stats });
+            io.emit('update', { queue, stats, completedHistory });
         }
     });
 
@@ -169,12 +172,16 @@ io.on('connection', (socket) => {
                 waitTimes.push(waitMins);
                 if (waitTimes.length > 10) waitTimes.shift();
                 stats.averageWaitTime = Math.floor(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length);
+                
+                // ★ 履歴に保存するための時間を追加して格納
+                guest.completedTime = new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' });
+                completedHistory.push(guest);
             }
             queue = queue.filter(g => g.displayId !== displayId);
             stats.completedToday++;
             if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
             saveData();
-            io.emit('update', { queue, stats });
+            io.emit('update', { queue, stats, completedHistory });
         }
     });
 
@@ -182,7 +189,7 @@ io.on('connection', (socket) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) { 
             guest.arrived = true; saveData(); 
-            io.emit('update', { queue, stats }); 
+            io.emit('update', { queue, stats, completedHistory }); 
             io.emit('guestArrived', { displayId: guest.displayId });
         }
     });
@@ -190,10 +197,10 @@ io.on('connection', (socket) => {
     socket.on('markAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.absent = true; saveData(); io.emit('update', { queue, stats });
+            guest.absent = true; saveData(); io.emit('update', { queue, stats, completedHistory });
             absentTimers[displayId] = setTimeout(() => {
                 queue = queue.filter(g => g.displayId !== displayId);
-                saveData(); io.emit('update', { queue, stats });
+                saveData(); io.emit('update', { queue, stats, completedHistory });
                 delete absentTimers[displayId];
             }, 600000);
         }
@@ -202,7 +209,7 @@ io.on('connection', (socket) => {
     socket.on('cancelAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.absent = false; saveData(); io.emit('update', { queue, stats });
+            guest.absent = false; saveData(); io.emit('update', { queue, stats, completedHistory });
             if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
         }
     });
@@ -211,7 +218,7 @@ io.on('connection', (socket) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
             guest.called = true; saveData();
-            io.emit('update', { queue, stats });
+            io.emit('update', { queue, stats, completedHistory });
             io.emit('guestCalled', { displayId: guest.displayId, type: guest.type });
         }
     });
@@ -223,7 +230,8 @@ io.on('connection', (socket) => {
 
     socket.on('resetStats', () => {
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
-        waitTimes = []; saveData(); io.emit('update', { queue, stats });
+        completedHistory = []; // ★ 統計リセット時に履歴もリセット
+        waitTimes = []; saveData(); io.emit('update', { queue, stats, completedHistory });
     });
 
     socket.on('setAcceptance', ({ status, duration }) => {
@@ -245,7 +253,7 @@ io.on('connection', (socket) => {
 setInterval(() => {
     const jstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jstNow.getHours() === 0 && jstNow.getMinutes() === 0) {
-        queue = []; nextNumber = 1;
+        queue = []; nextNumber = 1; completedHistory = []; // ★ 日次リセットで履歴も削除
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
         waitTimes = []; saveData(); io.emit('dailyReset');
     }
