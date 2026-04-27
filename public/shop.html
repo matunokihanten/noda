@@ -9,10 +9,11 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
         header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 10; }
-        header h1 { margin: 0; font-size: 1.8em; font-weight: bold; }
-        header .subtitle { font-size: 1em; opacity: 0.9; margin-top: 5px; }
+        header h1 { margin: 0; font-size: 1.8em; font-weight: bold; line-height: 1.2; }
+        header .subtitle { font-size: 1.1em; opacity: 0.9; margin-top: 5px; font-weight: bold; }
+        header .info-text { font-size: 1em; margin-top: 5px; opacity: 0.9; }
         
-        .main-container { display: flex; flex: 1; overflow: hidden; height: calc(100% - 80px); }
+        .main-container { display: flex; flex: 1; overflow: hidden; height: calc(100% - 100px); }
         
         .left-panel { width: 450px; padding: 15px 15px 50px 15px; background: white; border-right: 3px solid #8b0000; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
@@ -44,6 +45,11 @@
 
         .right-panel { flex: 1; padding: 15px; overflow-y: auto; background: rgba(255,255,255,0.95); }
         
+        .total-summary { background: white; padding: 15px; border-radius: 12px; border: 2px solid #8b0000; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .total-label { font-size: 1.2em; color: #666; font-weight: bold; }
+        .total-number { font-size: 2.5em; color: #8b0000; font-weight: bold; margin: 0 10px; }
+        .total-unit { font-size: 1.2em; color: #666; }
+
         .queue-section { margin-bottom: 20px; }
         .queue-section h3 { color: #8b0000; font-size: 1.4em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #8b0000; }
         
@@ -78,8 +84,9 @@
 </head>
 <body>
     <header>
-        <h1>🏪 松乃木飯店 店舗受付</h1>
-        <div class="subtitle">タブレット専用画面</div>
+        <h1>🏮 松乃木飯店</h1>
+        <div class="subtitle">ネット順番待ち受付</div>
+        <div class="info-text">順番に、ご案内いたします。</div>
     </header>
     
     <div class="main-container">
@@ -146,8 +153,14 @@
         </div>
 
         <div class="right-panel">
+            <div class="total-summary">
+                <span class="total-label">現在の合計待ち組数:</span>
+                <span id="totalWaitCount" class="total-number">0</span>
+                <span class="total-unit">組</span>
+            </div>
+
             <div class="queue-section">
-                <h3>📱 ネット席待ちの方 - 到着確認</h3>
+                <h3>📱 ネット予約の方 - 到着確認</h3>
                 <p style="color:#666; margin-bottom:10px; font-size:0.95em;">※ お客様に番号をタップしてもらってください</p>
                 <div id="queueListWeb" class="grid-container"></div>
             </div>
@@ -162,7 +175,6 @@
     <script>
         const socket = io();
         const type = 'shop';
-        
         let nums = { adults: 2, children: 0, infants: 0 };
         let isAccepting = true;
         let selectedSeat = 'どこでも';
@@ -203,13 +215,12 @@
         socket.on('update', d => updateQueue(d));
 
         function updateQueue(d) {
+            document.getElementById('totalWaitCount').innerText = d.queue ? d.queue.length : 0;
             const webQueue = d.queue.filter(g => g.type === 'web');
             const shopQueue = d.queue.filter(g => g.type === 'shop');
-            
             const listWeb = document.getElementById('queueListWeb');
             const listShop = document.getElementById('queueListShop');
             
-            // Web予約（到着確認用）
             if (webQueue.length === 0) {
                 listWeb.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#999; font-size:1em;">ネット予約のお客様はいません</div>';
             } else {
@@ -226,12 +237,8 @@
                         statusBadge = '<div class="queue-status status-absent">⚠️ 不在</div>';
                         cardClass = 'absent';
                     }
-                    
                     const nameDisplay = g.name ? `<div style="font-size:0.85em;color:#8b0000;font-weight:bold;">${g.name}様</div>` : '';
-                    
-                    // 到着予想時刻があれば表示
                     const arrivalDisplay = g.arrivalTime ? `<div style="color:#d35400;font-weight:bold;margin-bottom:3px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
-                    
                     return `
                         <div class="queue-card ${cardClass}" onclick="markArrived('${g.displayId}', ${g.arrived})">
                             <span class="queue-id">${g.displayId}</span>
@@ -248,7 +255,6 @@
                 }).join('');
             }
             
-            // 店舗受付
             if (shopQueue.length === 0) {
                 listShop.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#999; font-size:1em;">店舗受付のお客様はいません</div>';
             } else {
@@ -262,9 +268,7 @@
                         statusBadge = '<div class="queue-status status-absent">⚠️ 不在</div>';
                         cardClass = 'absent';
                     }
-                    
                     const nameDisplay = g.name ? `<div style="font-size:0.85em;color:#8b0000;font-weight:bold;">${g.name}様</div>` : '';
-                    
                     return `
                         <div class="queue-card ${cardClass}">
                             <span class="queue-id">${g.displayId}</span>
@@ -281,7 +285,6 @@
             }
         }
 
-        // 到着マーク
         function markArrived(displayId, alreadyArrived) {
             if (alreadyArrived) {
                 alert('このお客様は既に到着済みです');
@@ -297,14 +300,8 @@
             updateAcceptanceUI();
         });
 
-        socket.on('guestArrived', data => {
-            playSound('arrival');
-        });
-
-        socket.on('guestCalled', data => {
-            playSound('call');
-        });
-
+        socket.on('guestArrived', data => playSound('arrival'));
+        socket.on('guestCalled', data => playSound('call'));
         socket.on('dailyReset', () => {
             alert('🔄 日次リセットが実行されました。新しい1日が始まります！');
             location.reload();
@@ -313,7 +310,6 @@
         function updateAcceptanceUI() {
             const btn = document.getElementById('regBtn');
             const msg = document.getElementById('stopMessage');
-            
             btn.disabled = !isAccepting || nums.adults < 1;
             btn.innerText = isAccepting ? "✓ 受付確定（発券する）" : "⏸️ 受付停止中";
             msg.style.display = isAccepting ? 'none' : 'block';
@@ -324,15 +320,11 @@
                 alert('現在受付を停止しております。');
                 return;
             }
-            
             if (nums.adults < 1) {
                 alert('大人の人数は1名以上必要です。');
                 return;
             }
-            
             const name = document.getElementById('nameInput').value.trim();
-            
-            // 💡 修正：確認ダイアログ（confirm）を削除し、すぐに発券処理へ進みます
             socket.emit('register', { type, ...nums, pref: selectedSeat, name });
         }
 
@@ -351,17 +343,11 @@
                 document.getElementById('formArea').style.display='none';
                 document.getElementById('ticketArea').style.display='block';
                 document.getElementById('num').innerText = g.displayId;
-                
-                // 3秒後に自動で次の受付画面へ
-                setTimeout(() => {
-                    closeTicket();
-                }, 3000);
+                setTimeout(() => { closeTicket(); }, 3000);
             }
         });
 
-        socket.on('error', err => {
-            alert('エラー: ' + err.message);
-        });
+        socket.on('error', err => { alert('エラー: ' + err.message); });
 
         function playSound(type) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -369,7 +355,6 @@
             const gainNode = audioContext.createGain();
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
             if (type === 'call') {
                 oscillator.frequency.value = 880;
                 gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
