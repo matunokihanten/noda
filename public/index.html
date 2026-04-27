@@ -9,12 +9,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #fdfaf5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        header h1 { margin: 0; font-size: 1.5em; font-weight: bold; }
-        header .subtitle { font-size: 0.9em; opacity: 0.9; margin-top: 5px; }
+        header h1 { margin: 0; font-size: 1.5em; font-weight: bold; line-height: 1.2; }
+        header .subtitle { font-size: 1em; opacity: 0.9; margin-top: 5px; font-weight: bold; }
+        header .info-text { font-size: 0.9em; margin-top: 5px; opacity: 0.9; }
         
-        .main-container { display: flex; flex: 1; height: calc(100vh - 80px); }
+        .main-container { display: flex; flex: 1; height: calc(100vh - 100px); }
 
-        /* 左側：入力フォーム */
         .left-panel { width: 420px; padding: 20px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
         .form-box { background: white; padding: 20px; border-radius: 20px; width: 100%; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
@@ -42,7 +42,6 @@
         .btn-submit:active { transform: translateY(0); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
-        /* 右側：待ち状況グリッド */
         .right-panel { flex: 1; padding: 20px; background: white; overflow-y: auto; }
         .queue-header { text-align: center; margin-bottom: 15px; }
         .queue-header h2 { color: #8b0000; font-size: 1.6em; margin-bottom: 5px; }
@@ -66,7 +65,6 @@
         .queue-status { font-size: 0.75em; font-weight: bold; margin-top: 5px; padding: 3px; border-radius: 3px; }
         .estimated-wait { font-size: 0.85em; color: #3498db; font-weight: bold; margin-top: 5px; }
 
-        /* 受付完了チケット */
         .ticket-area { border: 3px solid #8b0000; animation: fadeIn 0.5s; }
         .complete-id { font-size: 5em; color: #8b0000; font-weight: bold; text-align: center; margin: 20px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
         .success-message { color: #27ae60; font-size: 1.2em; font-weight: bold; margin: 10px 0; text-align: center; }
@@ -77,7 +75,6 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* 📢 呼び出し通知ポップアップ */
         .call-notification {
             position: fixed;
             top: 50%;
@@ -106,9 +103,6 @@
         .btn-close-notify { background: white; color: #d35400; font-weight: bold; padding: 15px; border-radius: 10px; border: none; width: 100%; font-size: 1.2em; cursor: pointer; }
 
         .stop-message { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; }
-        
-        /* 営業時間外用メッセージのスタイル追加 */
-        .out-of-hours-message { background: #f8d7da; border: 2px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; display: none; }
 
         @media (max-width: 1000px) { 
             .main-container { flex-direction: column; }
@@ -121,7 +115,7 @@
     <header>
         <h1>🏮 松乃木飯店</h1>
         <div class="subtitle">ネット順番待ち受付</div>
-        <div class="subtitle">順番に、ご案内いたします。</div>
+        <div class="info-text">順番に、ご案内いたします。</div>
     </header>
     
     <div id="callNotification" class="call-notification">
@@ -139,17 +133,13 @@
                     ⚠️ 現在受付を停止しています
                 </div>
                 
-                <div id="outOfHoursMessage" class="out-of-hours-message">
-                    ⚠️ 現在は営業時間外（14:25～17:00）のため順番待ちはできません
-                </div>
-                
                 <label class="control-label">📝 お名前（任意）</label>
                 <input type="text" id="nameInput" placeholder="お名前を入力（省略可）" maxlength="20">
                 
                 <label class="control-label">⏰ 店舗到着予想時刻（任意）</label>
                 <input type="time" id="arrivalTimeInput">
-                
-                <div class="number-control" style="margin-top:10px;">
+
+                <div class="number-control" style="margin-top: 10px;">
                     <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
                     <div class="control-row">
                         <button class="btn-step" onclick="changeNum('adults', -1)">−</button>
@@ -231,21 +221,7 @@
         let isAccepting = true;
         let myNumber = null;
         let selectedSeat = 'どこでも';
-        
-        // 音声の許可状態
         let soundEnabled = false;
-
-        // --- 営業時間外判定関数 ---
-        function checkBusinessHours() {
-            const now = new Date();
-            const minutes = now.getHours() * 60 + now.getMinutes();
-            // 14:25 は 14 * 60 + 25 = 865
-            // 17:00 は 17 * 60 = 1020
-            return (minutes >= 865 && minutes < 940);
-        }
-
-        // 1分ごとに営業時間をチェックしてUIを更新
-        setInterval(updateAcceptanceUI, 60000);
 
         function loadMyNumber() {
             const saved = localStorage.getItem('myQueueNumber');
@@ -328,11 +304,7 @@
                         waitTimeInfo = `<div class="estimated-wait">⏱️ 約${g.estimatedWait}分</div>`;
                     }
                     
-                    // 到着予想時刻の表示（あれば）
-                    let arrivalDisplay = '';
-                    if (g.arrivalTime) {
-                        arrivalDisplay = `<div style="color: #d35400; font-size: 0.85em; font-weight: bold; margin-top: 3px;">⏰ 予想: ${g.arrivalTime}</div>`;
-                    }
+                    let arrivalDisplay = g.arrivalTime ? `<div style="color: #d35400; font-size: 0.85em; font-weight: bold; margin-top: 3px;">⏰ 予想: ${g.arrivalTime}</div>` : '';
                     
                     return `
                         <div class="queue-card ${cardClass}">
@@ -355,7 +327,6 @@
             updateAcceptanceUI();
         });
 
-        // 📢 管理画面で「呼出」ボタンが押された時の処理
         socket.on('guestCalled', data => {
             if (data.displayId === myNumber) {
                 showCallNotification();
@@ -370,13 +341,10 @@
             location.reload();
         });
 
-        // 呼び出しポップアップ表示
         function showCallNotification() {
             const notification = document.getElementById('callNotification');
             notification.style.display = 'block';
-            
             playCallSound();
-            
             if (navigator.vibrate) {
                 navigator.vibrate([1000, 300, 1000, 300, 1000, 300]);
             }
@@ -388,26 +356,20 @@
 
         function playCallSound() {
             if (!soundEnabled) return; 
-            
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
             oscillator.type = 'sine';
             oscillator.frequency.setValueAtTime(880, audioContext.currentTime); 
             oscillator.frequency.setValueAtTime(1108.73, audioContext.currentTime + 0.2); 
             oscillator.frequency.setValueAtTime(1318.51, audioContext.currentTime + 0.4); 
-            
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.1);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
-            
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 1.5);
-
             setTimeout(() => {
                 if (window.speechSynthesis) {
                     const numberText = myNumber ? myNumber.replace('-', '番') : '';
@@ -420,39 +382,20 @@
             }, 1200);
         }
 
-        // --- UIの更新（営業時間外判定を含む） ---
         function updateAcceptanceUI() {
             const btn = document.getElementById('regBtn');
             const msg = document.getElementById('stopMessage');
-            const outOfHoursMsg = document.getElementById('outOfHoursMessage');
-            
-            const isOutOfHours = checkBusinessHours();
-            
-            if (isOutOfHours) {
-                btn.disabled = true;
-                btn.innerText = "⛔ 営業時間外";
-                msg.style.display = 'none';
-                outOfHoursMsg.style.display = 'block';
-            } else {
-                btn.disabled = !isAccepting;
-                btn.innerText = isAccepting ? "✓ 受付確定" : "⏸️ 受付停止中";
-                msg.style.display = isAccepting ? 'none' : 'block';
-                outOfHoursMsg.style.display = 'none';
-            }
+            // 営業時間制限を解除しました。常に現在のシステム状態(isAccepting)に従います。
+            btn.disabled = !isAccepting;
+            btn.innerText = isAccepting ? "✓ 受付確定" : "⏸️ 受付停止中";
+            msg.style.display = isAccepting ? 'none' : 'block';
         }
 
         function send() {
-            // 念のため送信時にも営業時間チェック
-            if (checkBusinessHours()) {
-                alert('現在は営業時間外（14:25～17:00）のため受付できません。');
-                return;
-            }
-            
             if (!isAccepting) {
                 alert('申し訳ございません。現在受付を停止しております。');
                 return;
             }
-            
             soundEnabled = true;
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -460,32 +403,23 @@
                 osc.connect(ctx.destination);
                 osc.start();
                 osc.stop();
-            } catch (e) {
-                console.error("Audio initialization failed:", e);
-            }
-
+            } catch (e) {}
             if (window.speechSynthesis) {
                 const utterance = new SpeechSynthesisUtterance('');
                 window.speechSynthesis.speak(utterance);
             }
-            
             const name = document.getElementById('nameInput').value.trim();
-            const arrivalTime = document.getElementById('arrivalTimeInput').value; // 到着予想時刻を取得
-            
-            // データに arrivalTime を含めて送信
+            const arrivalTime = document.getElementById('arrivalTimeInput').value;
             socket.emit('register', { type, ...nums, pref: selectedSeat, name, arrivalTime });
         }
 
         function cancelMyReservation() {
             if (!myNumber) return;
-            
             if (confirm('順番待ちをキャンセルしてもよろしいですか？\n※この操作は取り消せません。')) {
                 socket.emit('cancelReservation', { displayId: myNumber });
-                
                 localStorage.removeItem('myQueueNumber');
                 localStorage.removeItem('myQueueDate');
                 myNumber = null;
-                
                 alert('キャンセルが完了しました。');
                 closeTicket();
             }
@@ -497,11 +431,9 @@
             nums = { adults: 2, children: 0, infants: 0 };
             selectedSeat = 'どこでも';
             document.getElementById('nameInput').value = '';
-            document.getElementById('arrivalTimeInput').value = ''; // 時間もクリア
-            
+            document.getElementById('arrivalTimeInput').value = '';
             document.getElementById('ticketTitle').innerText = '✅ 受付完了しました';
             soundEnabled = false;
-
             updateDisplays();
             selectSeat('どこでも');
         }
@@ -510,14 +442,12 @@
             document.getElementById('formArea').style.display='none';
             document.getElementById('ticketArea').style.display='block';
             document.getElementById('num').innerText = g.displayId;
-            
             const waitTimeInfo = document.getElementById('waitTimeInfo');
             if (g.estimatedWait && g.estimatedWait > 0) {
                 waitTimeInfo.innerHTML = `⏱️ 待ち時間目安: 約${g.estimatedWait}分<br><span style="font-size:0.8em; color:#999;">※混雑状況により前後します</span>`;
             } else {
                 waitTimeInfo.innerHTML = '';
             }
-            
             saveMyNumber(g.displayId);
         });
 
@@ -527,7 +457,7 @@
 
         window.addEventListener('load', () => {
             loadMyNumber();
-            updateAcceptanceUI(); // 初回読み込み時にも時間チェック
+            updateAcceptanceUI();
         });
     </script>
 </body>
