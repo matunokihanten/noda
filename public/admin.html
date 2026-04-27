@@ -29,6 +29,7 @@
         .btn-start { background: #27ae60; color: white; }
         .btn-reset { background: #95a5a6; color: white; }
         .btn-danger { background: #c0392b; color: white; }
+        .btn-info { background: #3498db; color: white; }
         
         #statusLabel { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; padding: 10px; border-radius: 8px; text-align: center; }
         .status-accepting { background: #d4edda; color: #155724; }
@@ -90,7 +91,6 @@
         .badge-called { background: #e67e22; color: white; }
         .badge-absent { background: #e74c3c; color: white; }
 
-        /* 案内履歴カード専用のスタイル */
         .history-card { opacity: 0.8; background: #f9f9f9; border-color: #bdc3c7; }
         .history-card .admin-card-id { color: #7f8c8d; }
     </style>
@@ -179,6 +179,7 @@
                 <button class="btn-start" onclick="setAccept(true, 0)">▶ 受付再開</button>
                 <button class="btn-reset" onclick="resetStats()">📊 統計リセット</button>
                 <button class="btn-danger" onclick="resetQueueNumber()">🔄 番号を1にリセット</button>
+                <button class="btn-info" onclick="showHistory()">📋 案内履歴を表示</button>
             </div>
         </div>
     </div>
@@ -211,7 +212,6 @@
         let lastQueueLength = 0;
         let isFirstLoad = true;
         let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
-        
         let currentNotificationAudio = null;
 
         function updateClock() {
@@ -233,6 +233,16 @@
                 content.style.display = 'none';
                 header.classList.add('collapsed');
             }
+        }
+
+        // ★ 履歴セクションを表示してスクロールする関数
+        function showHistory() {
+            const content = document.getElementById('historyContent');
+            const header = document.getElementById('historyHeader');
+            if (content.style.display === 'none') {
+                toggleSection('historyContent', 'historyHeader');
+            }
+            header.scrollIntoView({ behavior: 'smooth' });
         }
 
         document.getElementById('voiceEnabled').checked = voiceEnabled;
@@ -347,7 +357,6 @@
                     actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
 
                     let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
-                    
                     const arrivalTimeDisplay = g.arrivalTime ? `<div style="color: #d35400; font-weight: bold; margin-top: 5px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
 
                     return `
@@ -373,16 +382,18 @@
             }
         }
 
-        // ★ 案内完了履歴を画面に描画する関数
+        // ★ 案内完了履歴を画面に描画する関数（不在削除の赤色表示に対応）
         function updateHistoryUI(history) {
             const list = document.getElementById('historyList');
             if (!history || history.length === 0) {
                 list.innerHTML = '<div class="no-data" style="grid-column: 1 / -1;">案内履歴はありません</div>';
             } else {
-                // 最新の履歴が一番上に来るように配列を反転して表示
                 list.innerHTML = [...history].reverse().map(g => {
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
+                    
+                    const statusText = g.isAbsentDelete ? '🔴 不在自動削除' : '✅ 案内完了';
+                    const statusColor = g.isAbsentDelete ? '#e74c3c' : '#27ae60';
                     
                     return `
                         <div class="admin-card history-card">
@@ -395,7 +406,7 @@
                                 <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
                                 <div>🪑 ${g.pref}</div>
                                 <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
-                                <div style="color: #27ae60; font-weight: bold; font-size: 0.9em; margin-top: 3px;">✅ 案内完了: ${g.completedTime || '--:--'}</div>
+                                <div style="color: ${statusColor}; font-weight: bold; font-size: 0.9em; margin-top: 3px;">${statusText}: ${g.completedTime || '--:--'}</div>
                             </div>
                         </div>
                     `;
@@ -417,12 +428,7 @@
             if (d.printerEnabled !== undefined) printerEnabled = d.printerEnabled;
             updatePrinterStatus(); updateWaitTimeDisplayStatus(); 
             updateUI(d);
-            
-            // ★ 初期ロード時に履歴を表示
-            if (d.completedHistory) {
-                updateHistoryUI(d.completedHistory);
-            }
-            
+            if (d.completedHistory) { updateHistoryUI(d.completedHistory); }
             const label = document.getElementById('statusLabel');
             label.innerText = d.isAccepting ? "✅ 現在：受付中" : "⏸️ 現在：受付停止中";
             label.className = d.isAccepting ? "status-accepting" : "status-stopped";
@@ -434,11 +440,7 @@
                 lastQueueLength = d.queue.length; isFirstLoad = false;
             }
             updateUI(d);
-            
-            // ★ データ更新時に履歴も更新
-            if (d.completedHistory) {
-                updateHistoryUI(d.completedHistory);
-            }
+            if (d.completedHistory) { updateHistoryUI(d.completedHistory); }
         });
 
         socket.on('printerStatusChanged', data => { printerEnabled = data.printerEnabled; updatePrinterStatus(); });
