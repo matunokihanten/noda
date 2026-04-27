@@ -8,7 +8,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #fdfaf5; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
-        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10; position: relative; }
         header h1 { margin: 0; font-size: 1.5em; font-weight: bold; line-height: 1.2; }
         header .subtitle { font-size: 1em; opacity: 0.9; margin-top: 5px; font-weight: bold; }
         header .info-text { font-size: 0.9em; margin-top: 5px; opacity: 0.9; }
@@ -47,9 +47,10 @@
             background: #fff;
         }
         
-        .main-container { display: flex; flex: 1; overflow: hidden; }
+        /* ★ メインレイアウトを中央寄せに変更 */
+        .main-container { display: flex; flex: 1; overflow-y: auto; justify-content: center; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
 
-        .left-panel { width: 420px; padding: 20px 20px 60px 20px; border-right: 2px solid #d4b483; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow-y: auto; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
+        .left-panel { width: 100%; max-width: 600px; padding: 20px 20px 60px 20px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; }
         .form-box { background: white; padding: 20px; border-radius: 20px; width: 100%; border: 2px solid #d4b483; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
         input[type="text"], input[type="time"] { padding: 12px; margin: 10px 0; width: 100%; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; transition: border-color 0.3s; }
@@ -76,15 +77,91 @@
         .btn-submit:active { transform: translateY(0); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
-        .right-panel { flex: 1; padding: 20px; background: white; overflow-y: auto; }
+        /* ★ 右パネルをスライドメニュー（ドロワー）に変更 */
+        .right-panel {
+            position: fixed;
+            top: 0;
+            right: -100%; /* 初期は画面外へ */
+            width: 85%;
+            max-width: 400px;
+            height: 100%;
+            background: white;
+            z-index: 2000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        .right-panel.open {
+            right: 0; /* クラス付与で表示 */
+        }
+        .right-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        /* ★ スライドメニューを開くための右端タブ */
+        .btn-open-queue {
+            position: fixed;
+            right: 0;
+            top: 55%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%);
+            color: white;
+            padding: 20px 8px;
+            border-radius: 15px 0 0 15px;
+            cursor: pointer;
+            z-index: 1500;
+            font-weight: bold;
+            box-shadow: -2px 2px 8px rgba(0,0,0,0.3);
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            letter-spacing: 3px;
+            font-size: 1.05em;
+            user-select: none;
+        }
+
+        /* ★ スライドメニューを閉じるボタン */
+        .btn-close-queue {
+            background: #fdfaf5;
+            border: none;
+            padding: 20px;
+            text-align: left;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #8b0000;
+            cursor: pointer;
+            border-bottom: 2px solid #d4b483;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ★ メニュー背後の暗転オーバーレイ */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s;
+        }
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .queue-header { text-align: center; margin-bottom: 15px; }
-        .queue-header h2 { color: #8b0000; font-size: 1.6em; margin-bottom: 5px; }
         .queue-count { font-size: 1.2em; color: #666; }
         .queue-count .num { font-weight: bold; color: #8b0000; font-size: 1.4em; }
         
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
         .queue-card { background: linear-gradient(135deg, #fffcf5 0%, #fff8f0 100%); border: 2px solid #d4b483; border-radius: 12px; padding: 15px; text-align: center; transition: all 0.3s; }
-        .queue-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .queue-card.arrived { border-color: #27ae60; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
         .queue-card.called { border-color: #e67e22; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); animation: pulse 2s infinite; }
         .queue-card.my-number { border: 4px solid #8b0000; box-shadow: 0 8px 20px rgba(139, 0, 0, 0.4); }
@@ -110,20 +187,10 @@
         }
 
         .call-notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            z-index: 10000;
-            text-align: center;
-            display: none;
-            width: 90%;
-            max-width: 400px;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white;
+            padding: 30px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 10000; text-align: center; display: none; width: 90%; max-width: 400px;
             animation: callPulse 1.5s infinite;
         }
         
@@ -138,11 +205,8 @@
 
         .stop-message { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; }
 
-        @media (max-width: 1000px) { 
-            .main-container { flex-direction: column; }
-            .left-panel { width: 100%; border-right: none; border-bottom: 2px solid #d4b483; max-height: 55vh; }
-            .right-panel { max-height: 45vh; }
-            .grid-container { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 500px) { 
+            .grid-container { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -160,6 +224,11 @@
         <h2>📢 お呼び出しです</h2>
         <p>お席の準備ができました<br>店舗スタッフにお声がけください</p>
         <button class="btn-close-notify" onclick="closeCallNotification()">確認しました</button>
+    </div>
+
+    <div id="overlay" class="overlay" onclick="closeQueuePanel()"></div>
+    <div id="openQueueBtn" class="btn-open-queue" onclick="openQueuePanel()">
+        待ち状況を確認 ◀
     </div>
     
     <div class="main-container">
@@ -240,14 +309,19 @@
             </div>
         </div>
         
-        <div class="right-panel">
-            <div class="queue-header">
-                <h2>📋 現在の待ち状況</h2>
-                <div class="queue-count">
-                    <span class="num" id="count">0</span> 組のお客様がお待ちです
+        <div id="rightPanel" class="right-panel">
+            <button class="btn-close-queue" onclick="closeQueuePanel()">
+                <span>📋 現在の待ち状況</span>
+                <span style="font-size:1.2em;">✖</span>
+            </button>
+            <div class="right-panel-content">
+                <div class="queue-header" style="margin-bottom: 10px;">
+                    <div class="queue-count">
+                        <span class="num" id="count">0</span> 組のお客様がお待ちです
+                    </div>
                 </div>
+                <div id="queueList" class="grid-container"></div>
             </div>
-            <div id="queueList" class="grid-container"></div>
         </div>
     </div>
 
@@ -260,19 +334,53 @@
         let myNumber = null;
         let selectedSeat = 'どこでも';
         let soundEnabled = false;
-        let waitTimeDisplayEnabled = false; // ★ 待ち時間目安のON/OFF状態を管理する変数を追加
+        let waitTimeDisplayEnabled = false; 
+
+        // ★ スライドメニューの開閉関数
+        function openQueuePanel() {
+            document.getElementById('rightPanel').classList.add('open');
+            document.getElementById('overlay').classList.add('show');
+            document.body.style.overflow = 'hidden'; // 背面のスクロールを無効化
+        }
+
+        function closeQueuePanel() {
+            document.getElementById('rightPanel').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+            document.body.style.overflow = ''; // スクロールを元に戻す
+        }
+
+        // ★ スワイプ操作で開閉する処理
+        let touchStartX = 0;
+        let touchEndX = 0;
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            // 画面の右端(80%より右)から左へスワイプした場合に開く
+            if (touchStartX - touchEndX > swipeThreshold && touchStartX > window.innerWidth * 0.8) {
+                openQueuePanel();
+            }
+            // 左から右へスワイプした場合に閉じる
+            if (touchEndX - touchStartX > swipeThreshold) {
+                if (document.getElementById('rightPanel').classList.contains('open')) {
+                    closeQueuePanel();
+                }
+            }
+        }
 
         function loadMyNumber() {
             const saved = localStorage.getItem('myQueueNumber');
             const savedDate = localStorage.getItem('myQueueDate');
             const today = new Date().toDateString();
-            
-            if (saved && savedDate === today) {
-                myNumber = saved;
-            } else {
-                localStorage.removeItem('myQueueNumber');
-                localStorage.removeItem('myQueueDate');
-            }
+            if (saved && savedDate === today) { myNumber = saved; } 
+            else { localStorage.removeItem('myQueueNumber'); localStorage.removeItem('myQueueDate'); }
         }
 
         function saveMyNumber(number) {
@@ -294,38 +402,29 @@
         }
 
         function setNum(key, val) {
-            nums[key] = val;
-            updateDisplays();
+            nums[key] = val; updateDisplays();
         }
 
         function selectSeat(seat) {
             selectedSeat = seat;
             document.querySelectorAll('.btn-seat').forEach(btn => {
                 btn.classList.remove('selected');
-                if (btn.textContent === seat) {
-                    btn.classList.add('selected');
-                }
+                if (btn.textContent === seat) btn.classList.add('selected');
             });
         }
 
         socket.on('init', d => {
             isAccepting = d.isAccepting;
-            // ★ 初期ロード時に管理画面の設定状態を受け取る
-            if (d.waitTimeDisplayEnabled !== undefined) {
-                waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
-            }
+            if (d.waitTimeDisplayEnabled !== undefined) waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
             updateAcceptanceUI();
             updateQueue(d);
         });
 
         socket.on('update', d => updateQueue(d));
 
-        // ★ 管理画面で設定が変更された時にリアルタイムで受け取る処理を追加
         socket.on('waitTimeDisplayChanged', data => {
             waitTimeDisplayEnabled = data.waitTimeDisplayEnabled;
-            if (data.queue) {
-                updateQueue({ queue: data.queue }); // 画面の表示を更新
-            }
+            if (data.queue) updateQueue({ queue: data.queue }); 
         });
 
         function updateQueue(d) {
@@ -333,7 +432,6 @@
             document.getElementById('headerCount').innerText = d.queue.length;
             
             const list = document.getElementById('queueList');
-            
             if (d.queue.length === 0) {
                 list.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#999; font-size:1.1em;">現在お待ちのお客様はいません</div>';
             } else {
@@ -347,17 +445,12 @@
                         statusBadge = '<div class="queue-status" style="background:#e67e22;color:white;">📢 呼び出し中</div>';
                         cardClass = 'called';
                     }
-                    
-                    if (g.displayId === myNumber) {
-                        cardClass += ' my-number';
-                    }
+                    if (g.displayId === myNumber) cardClass += ' my-number';
                     
                     let waitTimeInfo = '';
-                    // ★ waitTimeDisplayEnabled が true の時だけ表示するように変更
                     if (waitTimeDisplayEnabled && g.estimatedWait && g.estimatedWait > 0) {
                         waitTimeInfo = `<div class="estimated-wait">⏱️ 約${g.estimatedWait}分</div>`;
                     }
-                    
                     let arrivalDisplay = g.arrivalTime ? `<div style="color: #d35400; font-size: 0.85em; font-weight: bold; margin-top: 3px;">⏰ 予想: ${g.arrivalTime}</div>` : '';
                     
                     return `
@@ -381,11 +474,7 @@
             updateAcceptanceUI();
         });
 
-        socket.on('guestCalled', data => {
-            if (data.displayId === myNumber) {
-                showCallNotification();
-            }
-        });
+        socket.on('guestCalled', data => { if (data.displayId === myNumber) showCallNotification(); });
 
         socket.on('dailyReset', () => {
             alert('🔄 日次リセットが実行されました。システムが更新されます。');
@@ -399,14 +488,10 @@
             const notification = document.getElementById('callNotification');
             notification.style.display = 'block';
             playCallSound();
-            if (navigator.vibrate) {
-                navigator.vibrate([1000, 300, 1000, 300, 1000, 300]);
-            }
+            if (navigator.vibrate) navigator.vibrate([1000, 300, 1000, 300, 1000, 300]);
         }
 
-        function closeCallNotification() {
-            document.getElementById('callNotification').style.display = 'none';
-        }
+        function closeCallNotification() { document.getElementById('callNotification').style.display = 'none'; }
 
         function playCallSound() {
             if (!soundEnabled) return; 
@@ -429,8 +514,7 @@
                     const numberText = myNumber ? myNumber.replace('-', '番') : '';
                     const text = `${numberText}のお客様、お待たせいたしました。順番になりましたので、店舗スタッフにお声がけください。`;
                     const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.lang = 'ja-JP';
-                    utterance.rate = 0.9;
+                    utterance.lang = 'ja-JP'; utterance.rate = 0.9;
                     window.speechSynthesis.speak(utterance);
                 }
             }, 1200);
@@ -445,25 +529,16 @@
         }
 
         function send() {
-            if (!isAccepting) {
-                alert('申し訳ございません。現在受付を停止しております。');
-                return;
-            }
+            if (!isAccepting) { alert('申し訳ございません。現在受付を停止しております。'); return; }
             soundEnabled = true;
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                osc.connect(ctx.destination);
-                osc.start();
-                osc.stop();
-            } catch (e) {}
-            if (window.speechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance('');
-                window.speechSynthesis.speak(utterance);
-            }
+            try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); osc.connect(ctx.destination); osc.start(); osc.stop(); } catch (e) {}
+            if (window.speechSynthesis) { const utterance = new SpeechSynthesisUtterance(''); window.speechSynthesis.speak(utterance); }
             const name = document.getElementById('nameInput').value.trim();
             const arrivalTime = document.getElementById('arrivalTimeInput').value;
             socket.emit('register', { type, ...nums, pref: selectedSeat, name, arrivalTime });
+            
+            // ★ 受付完了時、見やすいように少し上にスクロール
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelMyReservation() {
@@ -487,8 +562,7 @@
             document.getElementById('arrivalTimeInput').value = '';
             document.getElementById('ticketTitle').innerText = '✅ 受付完了しました';
             soundEnabled = false;
-            updateDisplays();
-            selectSeat('どこでも');
+            updateDisplays(); selectSeat('どこでも');
         }
 
         socket.on('registered', g => {
@@ -496,8 +570,6 @@
             document.getElementById('ticketArea').style.display='block';
             document.getElementById('num').innerText = g.displayId;
             const waitTimeInfo = document.getElementById('waitTimeInfo');
-            
-            // ★ waitTimeDisplayEnabled が true の時だけ表示するように変更
             if (waitTimeDisplayEnabled && g.estimatedWait && g.estimatedWait > 0) {
                 waitTimeInfo.innerHTML = `⏱️ 待ち時間目安: 約${g.estimatedWait}分<br><span style="font-size:0.8em; color:#999;">※混雑状況により前後します</span>`;
             } else {
@@ -506,9 +578,7 @@
             saveMyNumber(g.displayId);
         });
 
-        socket.on('error', err => {
-            alert('エラー: ' + err.message);
-        });
+        socket.on('error', err => alert('エラー: ' + err.message));
 
         window.addEventListener('load', () => {
             loadMyNumber();
