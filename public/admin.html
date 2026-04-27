@@ -89,6 +89,10 @@
         .badge-arrived { background: #27ae60; color: white; }
         .badge-called { background: #e67e22; color: white; }
         .badge-absent { background: #e74c3c; color: white; }
+
+        /* 案内履歴カード専用のスタイル */
+        .history-card { opacity: 0.8; background: #f9f9f9; border-color: #bdc3c7; }
+        .history-card .admin-card-id { color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -125,11 +129,11 @@
     </div>
 
     <div class="card">
-        <h2 id="settingsHeader" class="collapsible-header" onclick="toggleSection('settingsContent', 'settingsHeader')">
+        <h2 id="settingsHeader" class="collapsible-header collapsed" onclick="toggleSection('settingsContent', 'settingsHeader')">
             <span>⚙️ システム設定</span>
             <span class="toggle-icon">▼</span>
         </h2>
-        <div id="settingsContent">
+        <div id="settingsContent" style="display: none;">
             <div class="setting-control">
                 <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()" checked>
                 <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
@@ -161,11 +165,11 @@
     </div>
 
     <div class="card">
-        <h2 id="controlsHeader" class="collapsible-header" onclick="toggleSection('controlsContent', 'controlsHeader')">
+        <h2 id="controlsHeader" class="collapsible-header collapsed" onclick="toggleSection('controlsContent', 'controlsHeader')">
             <span>📋 受付コントロール</span>
             <span class="toggle-icon">▼</span>
         </h2>
-        <div id="controlsContent">
+        <div id="controlsContent" style="display: none;">
             <div id="statusLabel" class="status-accepting">状態確認中...</div>
             <div class="controls">
                 <label>停止時間設定：</label>
@@ -183,6 +187,18 @@
         <h2>👥 待ち状況一覧</h2>
         <div id="list" class="admin-grid">
             <div class="no-data" style="grid-column: 1 / -1;">待ち客はいません</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 id="historyHeader" class="collapsible-header" onclick="toggleSection('historyContent', 'historyHeader')">
+            <span>✅ 本日の案内完了履歴</span>
+            <span class="toggle-icon">▼</span>
+        </h2>
+        <div id="historyContent">
+            <div id="historyList" class="admin-grid">
+                <div class="no-data" style="grid-column: 1 / -1;">案内履歴はありません</div>
+            </div>
         </div>
     </div>
 
@@ -332,7 +348,6 @@
 
                     let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
                     
-                    // 到着予想時刻の表示追加
                     const arrivalTimeDisplay = g.arrivalTime ? `<div style="color: #d35400; font-weight: bold; margin-top: 5px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
 
                     return `
@@ -358,6 +373,36 @@
             }
         }
 
+        // ★ 案内完了履歴を画面に描画する関数
+        function updateHistoryUI(history) {
+            const list = document.getElementById('historyList');
+            if (!history || history.length === 0) {
+                list.innerHTML = '<div class="no-data" style="grid-column: 1 / -1;">案内履歴はありません</div>';
+            } else {
+                // 最新の履歴が一番上に来るように配列を反転して表示
+                list.innerHTML = [...history].reverse().map(g => {
+                    const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
+                    const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
+                    
+                    return `
+                        <div class="admin-card history-card">
+                            <div class="admin-card-header">
+                                <span class="admin-card-id">${g.displayId}</span>
+                                <span class="type-badge ${typeClass}">${typeLabel}</span>
+                            </div>
+                            <div class="admin-card-body">
+                                <div style="margin-bottom: 5px;"><b>${g.name || '名前なし'}</b> 様</div>
+                                <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
+                                <div>🪑 ${g.pref}</div>
+                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
+                                <div style="color: #27ae60; font-weight: bold; font-size: 0.9em; margin-top: 3px;">✅ 案内完了: ${g.completedTime || '--:--'}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
         socket.on('statusChange', s => {
             const isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             const label = document.getElementById('statusLabel');
@@ -370,7 +415,14 @@
             if (d.queue) { lastQueueLength = d.queue.length; isFirstLoad = false; }
             if (d.waitTimeDisplayEnabled !== undefined) waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
             if (d.printerEnabled !== undefined) printerEnabled = d.printerEnabled;
-            updatePrinterStatus(); updateWaitTimeDisplayStatus(); updateUI(d);
+            updatePrinterStatus(); updateWaitTimeDisplayStatus(); 
+            updateUI(d);
+            
+            // ★ 初期ロード時に履歴を表示
+            if (d.completedHistory) {
+                updateHistoryUI(d.completedHistory);
+            }
+            
             const label = document.getElementById('statusLabel');
             label.innerText = d.isAccepting ? "✅ 現在：受付中" : "⏸️ 現在：受付停止中";
             label.className = d.isAccepting ? "status-accepting" : "status-stopped";
@@ -382,6 +434,11 @@
                 lastQueueLength = d.queue.length; isFirstLoad = false;
             }
             updateUI(d);
+            
+            // ★ データ更新時に履歴も更新
+            if (d.completedHistory) {
+                updateHistoryUI(d.completedHistory);
+            }
         });
 
         socket.on('printerStatusChanged', data => { printerEnabled = data.printerEnabled; updatePrinterStatus(); });
@@ -410,7 +467,7 @@
         function markAbsent(id) { if (confirm(`${id} を不在にマークしますか？`)) socket.emit('markAbsent', { displayId: id }); }
         function cancelAbsent(id) { if (confirm(`${id} の不在を解除しますか？`)) socket.emit('cancelAbsent', { displayId: id }); }
         function setAccept(status, duration) { if (confirm('受付状態を変更しますか？')) socket.emit('setAcceptance', { status, duration }); }
-        function resetStats() { if (confirm('本日の統計をリセットしますか？')) socket.emit('resetStats'); }
+        function resetStats() { if (confirm('本日の統計と履歴をリセットしますか？')) socket.emit('resetStats'); }
         function resetQueueNumber() { if (confirm('受付番号を1にリセットしますか？')) socket.emit('resetQueueNumber'); }
 
         function playSound(type) {
