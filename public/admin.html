@@ -93,6 +93,24 @@
 
         .history-card { opacity: 0.8; background: #f9f9f9; border-color: #bdc3c7; }
         .history-card .admin-card-id { color: #7f8c8d; }
+
+        /* ★ 閉じるボタンのスタイル */
+        .btn-close-history {
+            background: #eee;
+            color: #666;
+            font-size: 1.2em;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .btn-close-history:hover {
+            background: #e74c3c;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -191,10 +209,10 @@
         </div>
     </div>
 
-    <div class="card">
-        <h2 id="historyHeader" class="collapsible-header" onclick="toggleSection('historyContent', 'historyHeader')">
+    <div class="card" id="historyCard" style="display: none;">
+        <h2 style="display: flex; justify-content: space-between; align-items: center;">
             <span>✅ 本日の案内完了履歴</span>
-            <span class="toggle-icon">▼</span>
+            <button class="btn-close-history" onclick="hideHistory()" title="閉じる">✖</button>
         </h2>
         <div id="historyContent">
             <div id="historyList" class="admin-grid">
@@ -235,14 +253,16 @@
             }
         }
 
-        // ★ 履歴セクションを表示してスクロールする関数
+        // ★ 履歴を表示する関数
         function showHistory() {
-            const content = document.getElementById('historyContent');
-            const header = document.getElementById('historyHeader');
-            if (content.style.display === 'none') {
-                toggleSection('historyContent', 'historyHeader');
-            }
-            header.scrollIntoView({ behavior: 'smooth' });
+            const card = document.getElementById('historyCard');
+            card.style.display = 'block';
+            card.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ★ 履歴を非表示にする関数
+        function hideHistory() {
+            document.getElementById('historyCard').style.display = 'none';
         }
 
         document.getElementById('voiceEnabled').checked = voiceEnabled;
@@ -382,7 +402,6 @@
             }
         }
 
-        // ★ 案内完了履歴を画面に描画する関数（不在削除の赤色表示に対応）
         function updateHistoryUI(history) {
             const list = document.getElementById('historyList');
             if (!history || history.length === 0) {
@@ -391,10 +410,8 @@
                 list.innerHTML = [...history].reverse().map(g => {
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
-                    
                     const statusText = g.isAbsentDelete ? '🔴 不在自動削除' : '✅ 案内完了';
                     const statusColor = g.isAbsentDelete ? '#e74c3c' : '#27ae60';
-                    
                     return `
                         <div class="admin-card history-card">
                             <div class="admin-card-header">
