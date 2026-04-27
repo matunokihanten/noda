@@ -30,7 +30,7 @@ const PRINT_JOB_FILE = path.join(__dirname, 'print_job.bin');
 let queue = [];
 let nextNumber = 1;
 let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
-let completedHistory = []; // ★ 案内完了履歴を保持する配列を追加
+let completedHistory = []; 
 let printerEnabled = true;
 let isAccepting = true;
 let waitTimeDisplayEnabled = false;
@@ -46,7 +46,7 @@ if (fs.existsSync(DATA_FILE)) {
         queue = data.queue || [];
         nextNumber = data.nextNumber || 1;
         stats = data.stats || stats;
-        completedHistory = data.completedHistory || []; // ★ 履歴を読み込み
+        completedHistory = data.completedHistory || []; 
         if (stats.totalWebToday === undefined) stats.totalWebToday = 0;
         if (stats.totalShopToday === undefined) stats.totalShopToday = 0;
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
@@ -56,7 +56,7 @@ if (fs.existsSync(DATA_FILE)) {
 }
 
 function saveData() {
-    const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled, completedHistory }; // ★ 履歴を保存
+    const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled, completedHistory };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -83,7 +83,7 @@ async function sendEmailBackup(subject, text) {
     }
 }
 
-// 🖨 プリンター制御（人数内訳を印字するように修正）
+// 🖨 プリンター制御
 function printTicket(guest) {
     if (!printerEnabled) return;
     try {
@@ -92,11 +92,8 @@ function printTicket(guest) {
         const expandCmd = Buffer.from([0x1b, 0x69, 0x01, 0x01]); 
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
-        
-        // 🌟 修正点：日本時間と、大人・子供・幼児の内訳を footerText に追加
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
         const footerText = `日時：${nowJst}\n人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
-        
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
         const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
         fs.writeFileSync(PRINT_JOB_FILE, Buffer.concat([initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd]));
@@ -116,10 +113,8 @@ app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.u
 
 // 💬 Socket.io 通信
 io.on('connection', (socket) => {
-    // ★ completedHistoryを追加して送信
     socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled, completedHistory });
 
-    // 新規登録
     socket.on('register', async (data) => {
         if (!isAccepting) return;
         const prefix = data.type === 'shop' ? 'S' : 'W';
@@ -136,23 +131,17 @@ io.on('connection', (socket) => {
             estimatedWait: estimatedWait
         };
         queue.push(newGuest);
-        
-        // 統計の更新
         stats.totalToday++;
         if (data.type === 'shop') { stats.totalShopToday++; } else { stats.totalWebToday++; }
         saveData();
-
         if (printerEnabled && data.type === 'shop') printTicket(newGuest);
-        
         const msg = `【松乃木飯店 予約】\n番号：${newGuest.displayId}\n人数：${data.adults}名\n名前：${data.name || 'なし'}様`;
         sendLineNotification(msg);
         sendEmailBackup(`新規受付 ${newGuest.displayId}`, msg);
-
         io.emit('update', { queue, stats, completedHistory });
         socket.emit('registered', newGuest);
     });
 
-    // キャンセル処理
     socket.on('cancelReservation', ({ displayId }) => {
         const guestIndex = queue.findIndex(g => g.displayId === displayId);
         if (guestIndex !== -1) {
@@ -163,7 +152,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 案内完了
     socket.on('updateStatus', ({ displayId, status }) => {
         if (status === 'completed') {
             const guest = queue.find(g => g.displayId === displayId);
@@ -172,8 +160,6 @@ io.on('connection', (socket) => {
                 waitTimes.push(waitMins);
                 if (waitTimes.length > 10) waitTimes.shift();
                 stats.averageWaitTime = Math.floor(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length);
-                
-                // ★ 履歴に保存するための時間を追加して格納
                 guest.completedTime = new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' });
                 completedHistory.push(guest);
             }
@@ -194,15 +180,28 @@ io.on('connection', (socket) => {
         }
     });
 
+    // ★ 不在マーク後の自動削除ロジックを履歴保存に対応
     socket.on('markAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.absent = true; saveData(); io.emit('update', { queue, stats, completedHistory });
+            guest.absent = true; 
+            saveData(); 
+            io.emit('update', { queue, stats, completedHistory });
+            
             absentTimers[displayId] = setTimeout(() => {
-                queue = queue.filter(g => g.displayId !== displayId);
-                saveData(); io.emit('update', { queue, stats, completedHistory });
+                const autoDeletedGuest = queue.find(g => g.displayId === displayId);
+                if (autoDeletedGuest) {
+                    // ★ 履歴に「不在自動削除」として保存
+                    autoDeletedGuest.completedTime = new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' });
+                    autoDeletedGuest.isAbsentDelete = true; 
+                    completedHistory.push(autoDeletedGuest);
+                    
+                    queue = queue.filter(g => g.displayId !== displayId);
+                    saveData(); 
+                    io.emit('update', { queue, stats, completedHistory });
+                }
                 delete absentTimers[displayId];
-            }, 600000);
+            }, 600000); // 10分
         }
     });
 
@@ -230,7 +229,7 @@ io.on('connection', (socket) => {
 
     socket.on('resetStats', () => {
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
-        completedHistory = []; // ★ 統計リセット時に履歴もリセット
+        completedHistory = []; 
         waitTimes = []; saveData(); io.emit('update', { queue, stats, completedHistory });
     });
 
@@ -253,7 +252,7 @@ io.on('connection', (socket) => {
 setInterval(() => {
     const jstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jstNow.getHours() === 0 && jstNow.getMinutes() === 0) {
-        queue = []; nextNumber = 1; completedHistory = []; // ★ 日次リセットで履歴も削除
+        queue = []; nextNumber = 1; completedHistory = []; 
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
         waitTimes = []; saveData(); io.emit('dailyReset');
     }
