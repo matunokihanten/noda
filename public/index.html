@@ -47,7 +47,6 @@
             background: #fff;
         }
         
-        /* ★ メインレイアウトを中央寄せに変更 */
         .main-container { display: flex; flex: 1; overflow-y: auto; justify-content: center; background: linear-gradient(180deg, #fdfaf5 0%, #fff8f0 100%); }
 
         .left-panel { width: 100%; max-width: 600px; padding: 20px 20px 60px 20px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; }
@@ -72,16 +71,26 @@
         .btn-seat:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .btn-seat.selected { background: #8b0000; color: white; border-color: #8b0000; }
         
+        /* ★ 無効化された座席ボタンのスタイル */
+        .btn-seat:disabled {
+            background: #e0e0e0 !important;
+            border-color: #ccc !important;
+            color: #999 !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+            text-decoration: line-through;
+        }
+        
         .btn-submit { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; border: none; padding: 20px; width: 100%; font-size: 1.3em; border-radius: 12px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 10px rgba(139, 0, 0, 0.3); }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(139, 0, 0, 0.4); }
         .btn-submit:active { transform: translateY(0); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
-        /* ★ 右パネルをスライドメニュー（ドロワー）に変更 */
         .right-panel {
             position: fixed;
             top: 0;
-            right: -100%; /* 初期は画面外へ */
+            right: -100%; 
             width: 85%;
             max-width: 400px;
             height: 100%;
@@ -93,7 +102,7 @@
             flex-direction: column;
         }
         .right-panel.open {
-            right: 0; /* クラス付与で表示 */
+            right: 0;
         }
         .right-panel-content {
             flex: 1;
@@ -101,7 +110,6 @@
             padding: 20px;
         }
         
-        /* ★ スライドメニューを開くための右端タブ */
         .btn-open-queue {
             position: fixed;
             right: 0;
@@ -122,7 +130,6 @@
             user-select: none;
         }
 
-        /* ★ スライドメニューを閉じるボタン */
         .btn-close-queue {
             background: #fdfaf5;
             border: none;
@@ -138,7 +145,6 @@
             align-items: center;
         }
 
-        /* ★ メニュー背後の暗転オーバーレイ */
         .overlay {
             position: fixed;
             top: 0;
@@ -279,12 +285,13 @@
                     </div>
                 </div>
 
+                <!-- ★ 各ボタンにidを付与 -->
                 <label class="control-label">🪑 座席のご希望</label>
                 <div class="seat-buttons">
-                    <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                    <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                    <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                    <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+                    <button type="button" id="seat-どこでも" class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
+                    <button type="button" id="seat-カウンター" class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
+                    <button type="button" id="seat-テーブル" class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
+                    <button type="button" id="seat-お座敷" class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
                 </div>
                 
                 <button id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定</button>
@@ -336,20 +343,21 @@
         let soundEnabled = false;
         let waitTimeDisplayEnabled = false; 
 
-        // ★ スライドメニューの開閉関数
+        // ★ ブロックされている座席を保持する配列
+        let blockedSeats = [];
+
         function openQueuePanel() {
             document.getElementById('rightPanel').classList.add('open');
             document.getElementById('overlay').classList.add('show');
-            document.body.style.overflow = 'hidden'; // 背面のスクロールを無効化
+            document.body.style.overflow = 'hidden'; 
         }
 
         function closeQueuePanel() {
             document.getElementById('rightPanel').classList.remove('open');
             document.getElementById('overlay').classList.remove('show');
-            document.body.style.overflow = ''; // スクロールを元に戻す
+            document.body.style.overflow = ''; 
         }
 
-        // ★ スワイプ操作で開閉する処理
         let touchStartX = 0;
         let touchEndX = 0;
         document.addEventListener('touchstart', e => {
@@ -363,11 +371,9 @@
 
         function handleSwipe() {
             const swipeThreshold = 50;
-            // 画面の右端(80%より右)から左へスワイプした場合に開く
             if (touchStartX - touchEndX > swipeThreshold && touchStartX > window.innerWidth * 0.8) {
                 openQueuePanel();
             }
-            // 左から右へスワイプした場合に閉じる
             if (touchEndX - touchStartX > swipeThreshold) {
                 if (document.getElementById('rightPanel').classList.contains('open')) {
                     closeQueuePanel();
@@ -406,6 +412,9 @@
         }
 
         function selectSeat(seat) {
+            // ブロックされている場合は選択できないように弾く（念のため）
+            if (blockedSeats.includes(seat)) return;
+            
             selectedSeat = seat;
             document.querySelectorAll('.btn-seat').forEach(btn => {
                 btn.classList.remove('selected');
@@ -413,11 +422,39 @@
             });
         }
 
+        // ★ 座席ボタンのUI（無効化など）を更新する関数
+        function updateSeatButtons() {
+            ['カウンター', 'テーブル', 'お座敷'].forEach(seat => {
+                const btn = document.getElementById(`seat-${seat}`);
+                if (!btn) return;
+                const isBlocked = blockedSeats.includes(seat);
+                btn.disabled = isBlocked;
+                
+                // 選択中の席がブロックされた場合は「どこでも」に強制変更
+                if (isBlocked && selectedSeat === seat) {
+                    selectSeat('どこでも');
+                }
+            });
+        }
+
         socket.on('init', d => {
             isAccepting = d.isAccepting;
             if (d.waitTimeDisplayEnabled !== undefined) waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
+            
+            // ★追加
+            if (d.blockedSeats) {
+                blockedSeats = d.blockedSeats;
+                updateSeatButtons();
+            }
+
             updateAcceptanceUI();
             updateQueue(d);
+        });
+
+        // ★ サーバーから座席ブロック状態の変更を受信
+        socket.on('seatBlockChanged', data => {
+            blockedSeats = data.blockedSeats || [];
+            updateSeatButtons();
         });
 
         socket.on('update', d => updateQueue(d));
@@ -537,7 +574,6 @@
             const arrivalTime = document.getElementById('arrivalTimeInput').value;
             socket.emit('register', { type, ...nums, pref: selectedSeat, name, arrivalTime });
             
-            // ★ 受付完了時、見やすいように少し上にスクロール
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
