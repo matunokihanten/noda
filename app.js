@@ -34,6 +34,7 @@ let completedHistory = [];
 let printerEnabled = true;
 let isAccepting = true;
 let waitTimeDisplayEnabled = false;
+let blockedSeats = []; // ★ 追加: ブロックされている座席を保持する配列
 
 let waitTimes = []; 
 let acceptanceTimer = null; 
@@ -52,11 +53,13 @@ if (fs.existsSync(DATA_FILE)) {
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
         isAccepting = data.isAccepting !== undefined ? data.isAccepting : true;
         waitTimeDisplayEnabled = data.waitTimeDisplayEnabled !== undefined ? data.waitTimeDisplayEnabled : false;
+        blockedSeats = data.blockedSeats || []; // ★ 追加: JSONからの読み込み
     } catch (e) { console.error("データ読込エラー:", e); }
 }
 
 function saveData() {
-    const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled, completedHistory };
+    // ★ 追加: blockedSeats を保存データに含める
+    const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled, completedHistory, blockedSeats };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -113,7 +116,21 @@ app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.u
 
 // 💬 Socket.io 通信
 io.on('connection', (socket) => {
-    socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled, completedHistory });
+    // ★ 追加: 接続時の init に blockedSeats を含める
+    socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled, completedHistory, blockedSeats });
+
+    // ★ 追加: 座席ブロック設定の受信と全体への配信
+    socket.on('toggleSeatBlock', (data) => {
+        if (data.blocked) {
+            if (!blockedSeats.includes(data.seat)) {
+                blockedSeats.push(data.seat);
+            }
+        } else {
+            blockedSeats = blockedSeats.filter(s => s !== data.seat);
+        }
+        saveData(); // ファイルに保存して次回起動時も維持する
+        io.emit('seatBlockChanged', { blockedSeats }); // 全端末へ変更を通知
+    });
 
     socket.on('register', async (data) => {
         if (!isAccepting) return;
@@ -180,7 +197,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ★ 不在マーク後の自動削除ロジックを履歴保存に対応
     socket.on('markAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
@@ -191,7 +207,6 @@ io.on('connection', (socket) => {
             absentTimers[displayId] = setTimeout(() => {
                 const autoDeletedGuest = queue.find(g => g.displayId === displayId);
                 if (autoDeletedGuest) {
-                    // ★ 履歴に「不在自動削除」として保存
                     autoDeletedGuest.completedTime = new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' });
                     autoDeletedGuest.isAbsentDelete = true; 
                     completedHistory.push(autoDeletedGuest);
