@@ -38,6 +38,17 @@
         .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 12px; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s; font-weight: 600; text-align: center; }
         .btn-seat:hover { transform: translateY(-2px); }
         .btn-seat.selected { background: #8b0000; color: white; border-color: #8b0000; }
+
+        /* ★ 無効化された座席ボタンのスタイル */
+        .btn-seat:disabled {
+            background: #e0e0e0 !important;
+            border-color: #ccc !important;
+            color: #999 !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+            text-decoration: line-through;
+        }
         
         .btn-submit { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; border: none; padding: 15px; width: 100%; font-size: 1.2em; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 3px 8px rgba(139, 0, 0, 0.3); margin-top: 10px; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(139, 0, 0, 0.4); }
@@ -133,12 +144,13 @@
                     </div>
                 </div>
 
+                <!-- ★ 各ボタンにidを付与 -->
                 <label class="control-label">🪑 座席のご希望</label>
                 <div class="seat-buttons">
-                    <button class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                    <button class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                    <button class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                    <button class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+                    <button type="button" id="seat-どこでも" class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
+                    <button type="button" id="seat-カウンター" class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
+                    <button type="button" id="seat-テーブル" class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
+                    <button type="button" id="seat-お座敷" class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
                 </div>
                 
                 <button id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定（発券する）</button>
@@ -177,6 +189,9 @@
         let nums = { adults: 2, children: 0, infants: 0 };
         let isAccepting = true;
         let selectedSeat = 'どこでも';
+        
+        // ★ ブロックされている座席を保持する配列
+        let blockedSeats = [];
 
         function updateDisplays() {
             document.getElementById('display-adults').innerText = nums.adults;
@@ -196,6 +211,8 @@
         }
 
         function selectSeat(seat) {
+            if (blockedSeats.includes(seat)) return;
+
             selectedSeat = seat;
             document.querySelectorAll('.btn-seat').forEach(btn => {
                 btn.classList.remove('selected');
@@ -205,10 +222,37 @@
             });
         }
 
+        // ★ 座席ボタンのUI更新
+        function updateSeatButtons() {
+            ['カウンター', 'テーブル', 'お座敷'].forEach(seat => {
+                const btn = document.getElementById(`seat-${seat}`);
+                if (!btn) return;
+                const isBlocked = blockedSeats.includes(seat);
+                btn.disabled = isBlocked;
+                
+                if (isBlocked && selectedSeat === seat) {
+                    selectSeat('どこでも');
+                }
+            });
+        }
+
         socket.on('init', d => {
             isAccepting = d.isAccepting;
+
+            // ★追加
+            if (d.blockedSeats) {
+                blockedSeats = d.blockedSeats;
+                updateSeatButtons();
+            }
+
             updateAcceptanceUI();
             updateQueue(d);
+        });
+
+        // ★ サーバーから座席ブロック状態の変更を受信
+        socket.on('seatBlockChanged', data => {
+            blockedSeats = data.blockedSeats || [];
+            updateSeatButtons();
         });
 
         socket.on('update', d => updateQueue(d));
