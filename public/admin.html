@@ -94,7 +94,6 @@
         .history-card { opacity: 0.8; background: #f9f9f9; border-color: #bdc3c7; }
         .history-card .admin-card-id { color: #7f8c8d; }
 
-        /* ★ 閉じるボタンのスタイル */
         .btn-close-history {
             background: #eee;
             color: #666;
@@ -152,6 +151,24 @@
             <span class="toggle-icon">▼</span>
         </h2>
         <div id="settingsContent" style="display: none;">
+            
+            <!-- ★追加部分：座席のブロック制御 -->
+            <div class="setting-control" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <label style="font-size: 1.05em; font-weight: 600;">🪑 座席の受付制限（使えない席をブロック）</label>
+                <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap; margin-top: 5px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.95em;">
+                        <input type="checkbox" onchange="toggleSeatBlock('カウンター', this.checked)" id="block-counter"> カウンター停止
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.95em;">
+                        <input type="checkbox" onchange="toggleSeatBlock('テーブル', this.checked)" id="block-table"> テーブル停止
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.95em;">
+                        <input type="checkbox" onchange="toggleSeatBlock('お座敷', this.checked)" id="block-zashiki"> お座敷停止
+                    </label>
+                </div>
+            </div>
+            <!-- ここまで -->
+
             <div class="setting-control">
                 <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()" checked>
                 <label for="notificationSoundEnabled">🔔 新規予約の受信時に音を鳴らす</label>
@@ -231,6 +248,9 @@
         let isFirstLoad = true;
         let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
         let currentNotificationAudio = null;
+        
+        // ★ 座席ブロック用の配列
+        let blockedSeats = [];
 
         function updateClock() {
             const now = new Date();
@@ -253,14 +273,12 @@
             }
         }
 
-        // ★ 履歴を表示する関数
         function showHistory() {
             const card = document.getElementById('historyCard');
             card.style.display = 'block';
             card.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // ★ 履歴を非表示にする関数
         function hideHistory() {
             document.getElementById('historyCard').style.display = 'none';
         }
@@ -269,6 +287,17 @@
         updateVoiceStatus();
         document.getElementById('soundDuration').value = soundDuration;
         updateSoundDurationLabel();
+
+        // ★ 座席ブロックの制御関数
+        function toggleSeatBlock(seat, blocked) {
+            socket.emit('toggleSeatBlock', { seat, blocked });
+        }
+
+        function updateBlockedSeatsUI() {
+            document.getElementById('block-counter').checked = blockedSeats.includes('カウンター');
+            document.getElementById('block-table').checked = blockedSeats.includes('テーブル');
+            document.getElementById('block-zashiki').checked = blockedSeats.includes('お座敷');
+        }
 
         function toggleNotificationSound() {
             notificationSoundEnabled = document.getElementById('notificationSoundEnabled').checked;
@@ -439,10 +468,18 @@
             if (s.queue) updateUI({ queue: s.queue, stats: {} });
         });
 
+        // ★ init 時にブロック状態を受け取る処理を追加
         socket.on('init', d => {
             if (d.queue) { lastQueueLength = d.queue.length; isFirstLoad = false; }
             if (d.waitTimeDisplayEnabled !== undefined) waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
             if (d.printerEnabled !== undefined) printerEnabled = d.printerEnabled;
+            
+            // ★追加
+            if (d.blockedSeats) {
+                blockedSeats = d.blockedSeats;
+                updateBlockedSeatsUI();
+            }
+
             updatePrinterStatus(); updateWaitTimeDisplayStatus(); 
             updateUI(d);
             if (d.completedHistory) { updateHistoryUI(d.completedHistory); }
@@ -451,6 +488,12 @@
             label.className = d.isAccepting ? "status-accepting" : "status-stopped";
         });
         
+        // ★ サーバーから座席ブロック状態の変更を受信した際の処理
+        socket.on('seatBlockChanged', data => {
+            blockedSeats = data.blockedSeats || [];
+            updateBlockedSeatsUI();
+        });
+
         socket.on('update', d => {
             if (d.queue) {
                 if (!isFirstLoad && notificationSoundEnabled && d.queue.length > lastQueueLength) playSound('new_reservation');
