@@ -8,21 +8,21 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        
+
         .header { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
         .header h1 { color: #8b0000; font-size: 1.8em; margin-bottom: 10px; }
         .header .clock { font-size: 2em; font-weight: bold; color: #333; }
-        
+
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.15); text-align: center; }
         .stat-value { font-size: 2.5em; font-weight: bold; color: #8b0000; }
         .stat-label { font-size: 0.9em; color: #666; margin-top: 5px; }
-        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; } 
-        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; } 
-        
+        .stat-sub { font-size: 0.8em; color: #9b59b6; font-weight: bold; }
+        .stat-shop { font-size: 0.8em; color: #3498db; font-weight: bold; }
+
         .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .card h2 { color: #8b0000; margin-bottom: 15px; font-size: 1.4em; }
-        
+
         button { cursor: pointer; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; transition: all 0.3s; font-size: 0.95em; }
         button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .btn-stop { background: #e74c3c; color: white; }
@@ -30,28 +30,28 @@
         .btn-reset { background: #95a5a6; color: white; }
         .btn-danger { background: #c0392b; color: white; }
         .btn-info { background: #3498db; color: white; }
-        
+
         #statusLabel { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; padding: 10px; border-radius: 8px; text-align: center; }
         .status-accepting { background: #d4edda; color: #155724; }
         .status-stopped { background: #f8d7da; color: #721c24; }
-        
+
         .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .controls label { font-weight: bold; margin-right: 10px; }
-        
+
         .setting-control { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .setting-control input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
         .setting-control label { font-size: 1.05em; font-weight: 600; cursor: pointer; flex: 1; }
         .setting-status { font-size: 0.9em; font-weight: bold; padding: 4px 12px; border-radius: 6px; }
         .status-on { background: #27ae60; color: white; }
         .status-off { background: #e74c3c; color: white; }
-        
+
         .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
         .collapsible-header:hover { opacity: 0.7; }
         .toggle-icon { font-size: 0.8em; transition: transform 0.3s ease; color: #666; }
         .collapsed .toggle-icon { transform: rotate(-90deg); }
-        
+
         .admin-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-top: 15px; }
-        
+
         @media (max-width: 1400px) { .admin-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 1000px) { .admin-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) { .admin-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -62,30 +62,30 @@
         .admin-card.arrived { border-color: #27ae60; background: #f0fdf4; }
         .admin-card.called { border-color: #e67e22; background: #fffbeb; }
         .admin-card.absent { border-color: #e74c3c; background: #fef2f2; opacity: 0.8; }
-        
+
         .admin-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
         .admin-card-id { font-size: 1.5em; font-weight: bold; color: #8b0000; }
-        
+
         .admin-card-body { font-size: 0.95em; color: #444; line-height: 1.5; flex: 1; }
         .admin-card-body b { font-size: 1.1em; color: #222; }
-        
+
         .admin-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 15px; }
         .admin-card-actions button { padding: 8px 4px; font-size: 0.85em; border-radius: 6px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
+
         .btn-complete { background: #2ecc71; color: white; grid-column: 1 / -1; font-size: 1em !important; padding: 10px !important; }
         .btn-call { background: #e67e22; color: white; }
         .btn-recall { background: #f39c12; color: white; }
         .btn-absent { background: #e74c3c; color: white; }
         .btn-cancel-absent { background: #3498db; color: white; }
-        
+
         .no-data { text-align: center; padding: 40px; color: #999; font-style: italic; border: 2px dashed #ccc; border-radius: 10px; }
         .wait-time { color: #e67e22; font-weight: bold; font-size: 0.9em; }
         .estimated-wait { color: #3498db; font-weight: bold; font-size: 0.9em; margin-top: 5px; }
-        
+
         .type-badge { padding: 4px 8px; border-radius: 5px; font-size: 0.85em; font-weight: bold; color: white; }
         .type-web { background: #9b59b6; }
         .type-shop { background: #3498db; }
-        
+
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; display: inline-block; margin-top: 5px; }
         .badge-arrived { background: #27ae60; color: white; }
         .badge-called { background: #e67e22; color: white; }
@@ -151,8 +151,6 @@
             <span class="toggle-icon">▼</span>
         </h2>
         <div id="settingsContent" style="display: none;">
-            
-            <!-- ★追加部分：座席のブロック制御 -->
             <div class="setting-control" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <label style="font-size: 1.05em; font-weight: 600;">🪑 座席の受付制限（使えない席をブロック）</label>
                 <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap; margin-top: 5px;">
@@ -167,7 +165,6 @@
                     </label>
                 </div>
             </div>
-            <!-- ここまで -->
 
             <div class="setting-control">
                 <input type="checkbox" id="notificationSoundEnabled" onchange="toggleNotificationSound()" checked>
@@ -183,7 +180,7 @@
             </div>
             <div class="setting-control">
                 <input type="checkbox" id="voiceEnabled" onchange="toggleVoice()">
-                <label for="voiceEnabled">🔊 受付番号を音声で読み上げる</label>
+                <label for="voiceEnabled">🔊 管理画面側でも受付番号を音声で読み上げる</label>
                 <span class="setting-status status-off" id="voiceStatus">OFF</span>
             </div>
             <div class="setting-control">
@@ -239,18 +236,32 @@
     </div>
 
     <script>
+        'use strict';
+
         const socket = io();
         let voiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
         let printerEnabled = true;
-        let waitTimeDisplayEnabled = false; 
+        let waitTimeDisplayEnabled = false;
         let notificationSoundEnabled = true;
         let lastQueueLength = 0;
         let isFirstLoad = true;
-        let soundDuration = parseInt(localStorage.getItem('soundDuration')) || 3;
+        let soundDuration = parseInt(localStorage.getItem('soundDuration'), 10) || 3;
         let currentNotificationAudio = null;
-        
-        // ★ 座席ブロック用の配列
         let blockedSeats = [];
+
+        // 同一番号への連打防止クールダウン管理（2秒）
+        const CALL_COOLDOWN_MS = 2000;
+        const lastCallTimestamps = {};
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function updateClock() {
             const now = new Date();
@@ -288,7 +299,6 @@
         document.getElementById('soundDuration').value = soundDuration;
         updateSoundDurationLabel();
 
-        // ★ 座席ブロックの制御関数
         function toggleSeatBlock(seat, blocked) {
             socket.emit('toggleSeatBlock', { seat, blocked });
         }
@@ -307,7 +317,7 @@
                 playSound('new_reservation');
             } else {
                 status.textContent = 'OFF'; status.className = 'setting-status status-off';
-                if(currentNotificationAudio) currentNotificationAudio.pause();
+                if (currentNotificationAudio) currentNotificationAudio.pause();
             }
         }
 
@@ -316,7 +326,7 @@
         }
 
         function updateSoundDuration() {
-            soundDuration = parseInt(document.getElementById('soundDuration').value);
+            soundDuration = parseInt(document.getElementById('soundDuration').value, 10);
             localStorage.setItem('soundDuration', soundDuration);
             updateSoundDurationLabel();
             if (notificationSoundEnabled) playSound('new_reservation');
@@ -376,7 +386,7 @@
             const now = Date.now();
             const diff = Math.floor((now - timestamp) / 1000 / 60);
             if (diff < 60) return `${diff}分`;
-            return `${Math.floor(diff/60)}時間${diff%60}分`;
+            return `${Math.floor(diff / 60)}時間${diff % 60}分`;
         }
 
         function updateUI(d) {
@@ -396,30 +406,43 @@
                     const waitTime = getWaitTime(g.timestamp);
                     const typeLabel = g.type === 'shop' ? '店舗' : 'Web';
                     const typeClass = g.type === 'shop' ? 'type-shop' : 'type-web';
-                    let cardClass = g.arrived ? 'arrived' : (g.called ? 'called' : (g.absent ? 'absent' : ''));
+                    const cardClass = g.arrived ? 'arrived' : (g.called ? 'called' : (g.absent ? 'absent' : ''));
                     let statusBadges = g.arrived ? '<span class="status-badge badge-arrived">✅ 到着済み</span>' : '';
-                    if(g.called) statusBadges += '<span class="status-badge badge-called">📢 呼び出し中</span>';
-                    if(g.absent) statusBadges += '<span class="status-badge badge-absent">⚠️ 不在(10分後削除)</span>';
-                    
-                    let actionButtons = g.absent ? `<button class="btn-cancel-absent" onclick="cancelAbsent('${g.displayId}')">不在解除</button>` : `<button class="btn-absent" onclick="markAbsent('${g.displayId}')">不在</button>`;
-                    actionButtons += g.called ? `<button class="btn-recall" onclick="recallGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">🔁 再呼出</button>` : `<button class="btn-call" onclick="callGuest('${g.displayId}', '${g.name || ''}', ${g.adults}, ${g.children}, ${g.infants})">📢 呼出</button>`;
-                    actionButtons += `<button class="btn-complete" onclick="done('${g.displayId}')">✓ 案内完了</button>`;
+                    if (g.called) statusBadges += '<span class="status-badge badge-called">📢 呼び出し中</span>';
+                    if (g.absent) statusBadges += '<span class="status-badge badge-absent">⚠️ 不在(10分後削除)</span>';
 
-                    let waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait) ? `<div class="estimated-wait">⏱️ 目安: 約${g.estimatedWait}分</div>` : '';
-                    const arrivalTimeDisplay = g.arrivalTime ? `<div style="color: #d35400; font-weight: bold; margin-top: 5px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
+                    const safeId = escapeHtml(g.displayId);
+                    const safeName = escapeHtml(g.name || '');
+                    const safePref = escapeHtml(g.pref || '');
+                    const safeTime = escapeHtml(g.time || '');
+
+                    let actionButtons = g.absent
+                        ? `<button class="btn-cancel-absent" onclick="cancelAbsent('${safeId}')">不在解除</button>`
+                        : `<button class="btn-absent" onclick="markAbsent('${safeId}')">不在</button>`;
+                    actionButtons += g.called
+                        ? `<button class="btn-recall" onclick="recallGuest('${safeId}', '${safeName}', ${Number(g.adults) || 0}, ${Number(g.children) || 0}, ${Number(g.infants) || 0})">🔁 再呼出</button>`
+                        : `<button class="btn-call" onclick="callGuest('${safeId}', '${safeName}', ${Number(g.adults) || 0}, ${Number(g.children) || 0}, ${Number(g.infants) || 0})">📢 呼出</button>`;
+                    actionButtons += `<button class="btn-complete" onclick="done('${safeId}')">✓ 案内完了</button>`;
+
+                    const waitTimeHtml = (waitTimeDisplayEnabled && g.estimatedWait)
+                        ? `<div class="estimated-wait">⏱️ 目安: 約${Number(g.estimatedWait)}分</div>`
+                        : '';
+                    const arrivalTimeDisplay = g.arrivalTime
+                        ? `<div style="color: #d35400; font-weight: bold; margin-top: 5px;">⏰ 到着予想: ${escapeHtml(g.arrivalTime)}</div>`
+                        : '';
 
                     return `
                         <div class="admin-card ${cardClass}">
                             <div class="admin-card-header">
-                                <span class="admin-card-id">${g.displayId}</span>
+                                <span class="admin-card-id">${safeId}</span>
                                 <span class="type-badge ${typeClass}">${typeLabel}</span>
                             </div>
                             <div class="admin-card-body">
-                                <div style="margin-bottom: 5px;"><b>${g.name || '名前なし'}</b> 様</div>
-                                <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
-                                <div>🪑 ${g.pref}</div>
+                                <div style="margin-bottom: 5px;"><b>${safeName || '名前なし'}</b> 様</div>
+                                <div>👥 大${Number(g.adults) || 0} / 子${Number(g.children) || 0} / 幼${Number(g.infants) || 0}</div>
+                                <div>🪑 ${safePref}</div>
                                 ${arrivalTimeDisplay}
-                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
+                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${safeTime}</div>
                                 <div class="wait-time">⏳ 待機: ${waitTime}</div>
                                 ${waitTimeHtml}
                                 <div>${statusBadges}</div>
@@ -444,15 +467,15 @@
                     return `
                         <div class="admin-card history-card">
                             <div class="admin-card-header">
-                                <span class="admin-card-id">${g.displayId}</span>
+                                <span class="admin-card-id">${escapeHtml(g.displayId)}</span>
                                 <span class="type-badge ${typeClass}">${typeLabel}</span>
                             </div>
                             <div class="admin-card-body">
-                                <div style="margin-bottom: 5px;"><b>${g.name || '名前なし'}</b> 様</div>
-                                <div>👥 大${g.adults} / 子${g.children} / 幼${g.infants}</div>
-                                <div>🪑 ${g.pref}</div>
-                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${g.time}</div>
-                                <div style="color: ${statusColor}; font-weight: bold; font-size: 0.9em; margin-top: 3px;">${statusText}: ${g.completedTime || '--:--'}</div>
+                                <div style="margin-bottom: 5px;"><b>${escapeHtml(g.name) || '名前なし'}</b> 様</div>
+                                <div>👥 大${Number(g.adults) || 0} / 子${Number(g.children) || 0} / 幼${Number(g.infants) || 0}</div>
+                                <div>🪑 ${escapeHtml(g.pref)}</div>
+                                <div style="margin-top: 5px; color: #666;">🕐 受付: ${escapeHtml(g.time)}</div>
+                                <div style="color: ${statusColor}; font-weight: bold; font-size: 0.9em; margin-top: 3px;">${statusText}: ${escapeHtml(g.completedTime) || '--:--'}</div>
                             </div>
                         </div>
                     `;
@@ -468,27 +491,24 @@
             if (s.queue) updateUI({ queue: s.queue, stats: {} });
         });
 
-        // ★ init 時にブロック状態を受け取る処理を追加
         socket.on('init', d => {
             if (d.queue) { lastQueueLength = d.queue.length; isFirstLoad = false; }
             if (d.waitTimeDisplayEnabled !== undefined) waitTimeDisplayEnabled = d.waitTimeDisplayEnabled;
             if (d.printerEnabled !== undefined) printerEnabled = d.printerEnabled;
-            
-            // ★追加
+
             if (d.blockedSeats) {
                 blockedSeats = d.blockedSeats;
                 updateBlockedSeatsUI();
             }
 
-            updatePrinterStatus(); updateWaitTimeDisplayStatus(); 
+            updatePrinterStatus(); updateWaitTimeDisplayStatus();
             updateUI(d);
             if (d.completedHistory) { updateHistoryUI(d.completedHistory); }
             const label = document.getElementById('statusLabel');
             label.innerText = d.isAccepting ? "✅ 現在：受付中" : "⏸️ 現在：受付停止中";
             label.className = d.isAccepting ? "status-accepting" : "status-stopped";
         });
-        
-        // ★ サーバーから座席ブロック状態の変更を受信した際の処理
+
         socket.on('seatBlockChanged', data => {
             blockedSeats = data.blockedSeats || [];
             updateBlockedSeatsUI();
@@ -509,23 +529,36 @@
             updateWaitTimeDisplayStatus();
             if (data.queue) updateUI({ queue: data.queue, stats: {} });
         });
-        socket.on('queueNumberReset', data => alert(`✅ 受付番号を1にリセットしました。`));
-        socket.on('guestArrived', data => playSound('info'));
+        socket.on('queueNumberReset', () => alert('✅ 受付番号を1にリセットしました。'));
+        socket.on('guestArrived', () => playSound('info'));
         socket.on('dailyReset', () => location.reload());
 
-        function done(id) { if (confirm(`${id} を案内完了にしますか？`)) socket.emit('updateStatus', { displayId: id, status: 'completed' }); }
+        function done(id) {
+            if (confirm(`${id} を案内完了にしますか？`)) {
+                socket.emit('updateStatus', { displayId: id, status: 'completed' });
+            }
+        }
+
+        // ★ 確認窓なしで即座に呼び出し（同一番号2秒以内の連打のみ防止）
+        function triggerCall(id, name, adults, children, infants) {
+            const now = Date.now();
+            if (lastCallTimestamps[id] && now - lastCallTimestamps[id] < CALL_COOLDOWN_MS) {
+                return;
+            }
+            lastCallTimestamps[id] = now;
+            socket.emit('callGuest', { displayId: id });
+            playSound('call');
+            speakNumber(id, name, adults, children, infants);
+        }
+
         function callGuest(id, name, adults, children, infants) {
-            if (confirm(`${id} お客様を呼び出しますか？`)) {
-                socket.emit('callGuest', { displayId: id });
-                playSound('call'); speakNumber(id, name, adults, children, infants);
-            }
+            triggerCall(id, name, adults, children, infants);
         }
+
         function recallGuest(id, name, adults, children, infants) {
-            if (confirm(`${id} を再度呼び出しますか？`)) {
-                socket.emit('callGuest', { displayId: id });
-                playSound('call'); speakNumber(id, name, adults, children, infants);
-            }
+            triggerCall(id, name, adults, children, infants);
         }
+
         function markAbsent(id) { if (confirm(`${id} を不在にマークしますか？`)) socket.emit('markAbsent', { displayId: id }); }
         function cancelAbsent(id) { if (confirm(`${id} の不在を解除しますか？`)) socket.emit('cancelAbsent', { displayId: id }); }
         function setAccept(status, duration) { if (confirm('受付状態を変更しますか？')) socket.emit('setAcceptance', { status, duration }); }
@@ -533,32 +566,38 @@
         function resetQueueNumber() { if (confirm('受付番号を1にリセットしますか？')) socket.emit('resetQueueNumber'); }
 
         function playSound(type) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            if (type === 'call') {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                osc.connect(gain); gain.connect(audioContext.destination);
-                osc.frequency.value = 880; gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.3);
-            } else if (type === 'info') {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                osc.connect(gain); gain.connect(audioContext.destination);
-                osc.frequency.value = 600; gain.gain.value = 0.2;
-                osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.15);
-            } else if (type === 'new_reservation') {
-                const durationSeconds = parseInt(document.getElementById('soundDuration').value) || 3;
-                if(currentNotificationAudio) currentNotificationAudio.pause();
-                currentNotificationAudio = new Audio('/1772254751_69a2761f6afb8.mp3');
-                currentNotificationAudio.loop = true;
-                currentNotificationAudio.play().catch(e => console.warn("音声再生ブロック回避のためクリックしてください"));
-                setTimeout(() => {
-                    if(currentNotificationAudio) { currentNotificationAudio.pause(); currentNotificationAudio.currentTime = 0; }
-                }, durationSeconds * 1000);
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const audioContext = new AudioCtx();
+                if (type === 'call') {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain); gain.connect(audioContext.destination);
+                    osc.frequency.value = 880; gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.3);
+                } else if (type === 'info') {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain); gain.connect(audioContext.destination);
+                    osc.frequency.value = 600; gain.gain.value = 0.2;
+                    osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.15);
+                } else if (type === 'new_reservation') {
+                    const durationSeconds = parseInt(document.getElementById('soundDuration').value, 10) || 3;
+                    if (currentNotificationAudio) currentNotificationAudio.pause();
+                    currentNotificationAudio = new Audio('/1772254751_69a2761f6afb8.mp3');
+                    currentNotificationAudio.loop = true;
+                    currentNotificationAudio.play().catch(() => console.warn("音声再生ブロック回避のためクリックしてください"));
+                    setTimeout(() => {
+                        if (currentNotificationAudio) { currentNotificationAudio.pause(); currentNotificationAudio.currentTime = 0; }
+                    }, durationSeconds * 1000);
+                }
+            } catch (e) {
+                console.warn('音声再生に失敗:', e);
             }
         }
-        socket.on('error', err => alert('エラー: ' + err.message));
+        socket.on('error', err => alert('エラー: ' + (err && err.message ? err.message : '不明なエラー')));
     </script>
 </body>
 </html>
