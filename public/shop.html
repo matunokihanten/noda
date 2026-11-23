@@ -48,19 +48,32 @@
             font-weight: bold;
             line-height: 1.2;
             white-space: nowrap;
+            cursor: default;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            touch-action: none;
+        }
+        header h1.pressing {
+            background: rgba(255, 255, 255, 0.22);
         }
         header .info-text {
-            font-size: 0.88em;
-            opacity: 0.9;
+            font-size: 0.92em;
+            opacity: 0.92;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
+        /* スタッフ設定コントロール（通常時は完全に非表示） */
         .header-controls {
-            display: flex;
+            display: none;
             align-items: center;
             gap: 6px;
             flex-shrink: 0;
+        }
+        .header-controls.staff-open {
+            display: flex;
         }
         .btn-header {
             background: rgba(255, 255, 255, 0.18);
@@ -77,9 +90,14 @@
         .btn-header:active {
             background: rgba(255, 255, 255, 0.35);
         }
-        .btn-header.locked {
+        .btn-header.muted {
             background: rgba(0, 0, 0, 0.35);
             border-color: rgba(255, 255, 255, 0.3);
+            color: #ffd700;
+        }
+        .btn-header.btn-close-staff {
+            background: #222;
+            border-color: #ffd700;
             color: #ffd700;
         }
 
@@ -109,7 +127,7 @@
             display: none;
         }
 
-        /* ================= 中央：横幅調整リサイザー ================= */
+        /* ================= 中央：横幅調整リサイザー（通常時はロック） ================= */
         .pane-resizer {
             width: 14px;
             flex-shrink: 0;
@@ -120,7 +138,7 @@
             justify-content: center;
             position: relative;
             touch-action: none;
-            transition: background 0.15s;
+            transition: background 0.15s, width 0.15s;
             z-index: 5;
         }
         .pane-resizer::after {
@@ -815,14 +833,15 @@
 <body>
     <header>
         <div class="header-left">
-            <h1>🏮 松乃木飯店</h1>
+            <h1 id="shopLogo" title="スタッフ設定：3秒長押し">🏮 松乃木飯店</h1>
             <div class="info-text">順番に、ご案内いたします。</div>
         </div>
-        <div class="header-controls">
+        <!-- スタッフ設定モード中のみ表示（通常時は非表示） -->
+        <div id="staffControls" class="header-controls">
             <button type="button" id="voiceCallBtn" class="btn-header" onclick="toggleShopVoice()">🔊 呼出音声: ON</button>
             <button type="button" id="resetWidthBtn" class="btn-header" onclick="resetPaneWidth()" title="左右を35:65に戻す">↔ 35:65</button>
-            <button type="button" id="lockWidthBtn" class="btn-header" onclick="toggleWidthLock()">🔓 幅変更可</button>
             <button type="button" id="toggleKbBtn" class="btn-header" onclick="toggleKeyboardPane()">⌨️ キーボードを隠す</button>
+            <button type="button" class="btn-header btn-close-staff" onclick="closeStaffMode()">🔒 完了</button>
         </div>
     </header>
 
@@ -886,8 +905,8 @@
             </div>
         </section>
 
-        <!-- ================= 中央：ドラッグ用リサイザー ================= -->
-        <div id="paneResizer" class="pane-resizer" role="separator" aria-orientation="vertical" aria-label="左右の横幅を調整"></div>
+        <!-- ================= 中央：ドラッグ用リサイザー（通常時はロック） ================= -->
+        <div id="paneResizer" class="pane-resizer locked" role="separator" aria-orientation="vertical" aria-label="左右の横幅を調整"></div>
 
         <!-- ================= 右パネル（初期65%）：本来の店舗受付画面 ================= -->
         <section class="original-pane">
@@ -1037,18 +1056,22 @@
         const socket = io();
         const type = 'shop';
         const MAX_NAME_LENGTH = 20;
-        const IDLE_RESET_MS = 60000;      // 無操作60秒で自動リセット
+        const IDLE_RESET_MS = 60000;      // 無操作60秒でフォーム自動リセット
         const TICKET_DISPLAY_MS = 5000;   // 完了画面を5秒表示
         const SUBMIT_TIMEOUT_MS = 10000;  // 通信タイムアウト復帰用
+        const STAFF_HOLD_MS = 3000;       // ロゴ3秒長押しでスタッフ設定を開く
+        const STAFF_AUTO_CLOSE_MS = 30000;// 設定モード30秒無操作で自動ロック
 
         // 横幅リサイズ設定（デフォルト35%）
         const STORAGE_KEY_WIDTH = 'shop_left_pane_width_pct_v2';
-        const STORAGE_KEY_LOCK = 'shop_left_pane_locked';
         const STORAGE_KEY_SHOP_VOICE = 'shop_call_voice_enabled';
         const DEFAULT_LEFT_PCT = 35;
         const MIN_LEFT_PCT = 25;
         const MAX_LEFT_PCT = 70;
-        let isWidthLocked = false;
+
+        let isStaffMode = false;
+        let staffHoldTimer = null;
+        let staffAutoCloseTimer = null;
         let isDraggingResizer = false;
         let shopVoiceEnabled = true;
 
@@ -1164,7 +1187,64 @@
         const ROMAJI_KEYS = Object.keys(ROMAJI_TABLE);
 
         // ============================================================
-        // 2. 店舗画面からの呼び出し音声読み上げ機能
+        // 2. スタッフ専用設定モード（ロゴ3秒長押しで開閉・自動ロック）
+        // ============================================================
+        function openStaffMode() {
+            isStaffMode = true;
+            document.getElementById('staffControls').classList.add('staff-open');
+            document.getElementById('paneResizer').classList.remove('locked');
+            resetStaffAutoCloseTimer();
+            playSound('arrival');
+        }
+
+        function closeStaffMode() {
+            isStaffMode = false;
+            if (staffAutoCloseTimer) {
+                clearTimeout(staffAutoCloseTimer);
+                staffAutoCloseTimer = null;
+            }
+            document.getElementById('staffControls').classList.remove('staff-open');
+            document.getElementById('paneResizer').classList.add('locked');
+        }
+
+        function resetStaffAutoCloseTimer() {
+            if (!isStaffMode) return;
+            if (staffAutoCloseTimer) clearTimeout(staffAutoCloseTimer);
+            staffAutoCloseTimer = setTimeout(() => {
+                closeStaffMode();
+            }, STAFF_AUTO_CLOSE_MS);
+        }
+
+        function initStaffLongPress() {
+            const logo = document.getElementById('shopLogo');
+            const cancelHold = () => {
+                if (staffHoldTimer) {
+                    clearTimeout(staffHoldTimer);
+                    staffHoldTimer = null;
+                }
+                logo.classList.remove('pressing');
+            };
+
+            logo.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                logo.classList.add('pressing');
+                staffHoldTimer = setTimeout(() => {
+                    logo.classList.remove('pressing');
+                    if (isStaffMode) {
+                        closeStaffMode();
+                    } else {
+                        openStaffMode();
+                    }
+                }, STAFF_HOLD_MS);
+            });
+
+            logo.addEventListener('pointerup', cancelHold);
+            logo.addEventListener('pointerleave', cancelHold);
+            logo.addEventListener('pointercancel', cancelHold);
+        }
+
+        // ============================================================
+        // 3. 店舗画面からの呼び出し音声読み上げ機能
         // ============================================================
         function initShopVoice() {
             try {
@@ -1180,10 +1260,11 @@
             const btn = document.getElementById('voiceCallBtn');
             if (!btn) return;
             btn.textContent = shopVoiceEnabled ? '🔊 呼出音声: ON' : '🔇 呼出音声: OFF';
-            btn.classList.toggle('locked', !shopVoiceEnabled);
+            btn.classList.toggle('muted', !shopVoiceEnabled);
         }
 
         function toggleShopVoice() {
+            resetStaffAutoCloseTimer();
             shopVoiceEnabled = !shopVoiceEnabled;
             try {
                 localStorage.setItem(STORAGE_KEY_SHOP_VOICE, String(shopVoiceEnabled));
@@ -1229,7 +1310,7 @@
         }
 
         // ============================================================
-        // 3. 無操作60秒自動リセット
+        // 4. 無操作60秒自動リセット
         // ============================================================
         function isFormDirty() {
             return (
@@ -1263,7 +1344,7 @@
         document.addEventListener('pointerdown', resetIdleTimer, { passive: true });
 
         // ============================================================
-        // 4. 左右横幅リサイズ制御（初期35%・ドラッグ調整・ロック）
+        // 5. 左右横幅リサイズ制御（スタッフモード中のみ操作可能）
         // ============================================================
         function applyLeftWidth(pct, save = true) {
             const clamped = Math.min(MAX_LEFT_PCT, Math.max(MIN_LEFT_PCT, Math.round(pct)));
@@ -1279,26 +1360,9 @@
         }
 
         function resetPaneWidth() {
+            resetStaffAutoCloseTimer();
             applyLeftWidth(DEFAULT_LEFT_PCT, true);
             showResizeBadge(DEFAULT_LEFT_PCT, 900);
-        }
-
-        function updateWidthLockUI() {
-            const btn = document.getElementById('lockWidthBtn');
-            const resizer = document.getElementById('paneResizer');
-            btn.textContent = isWidthLocked ? '🔒 幅固定中' : '🔓 幅変更可';
-            btn.classList.toggle('locked', isWidthLocked);
-            resizer.classList.toggle('locked', isWidthLocked);
-        }
-
-        function toggleWidthLock() {
-            isWidthLocked = !isWidthLocked;
-            try {
-                localStorage.setItem(STORAGE_KEY_LOCK, String(isWidthLocked));
-            } catch (e) {
-                console.warn('ロック状態の保存に失敗:', e);
-            }
-            updateWidthLockUI();
         }
 
         let badgeHideTimer = null;
@@ -1329,14 +1393,13 @@
                 } else {
                     applyLeftWidth(DEFAULT_LEFT_PCT, false);
                 }
-                isWidthLocked = localStorage.getItem(STORAGE_KEY_LOCK) === 'true';
             } catch (e) {
                 applyLeftWidth(DEFAULT_LEFT_PCT, false);
             }
-            updateWidthLockUI();
 
             resizer.addEventListener('pointerdown', (e) => {
-                if (isWidthLocked) return;
+                if (!isStaffMode) return;
+                resetStaffAutoCloseTimer();
                 isDraggingResizer = true;
                 resizer.classList.add('dragging');
                 resizer.setPointerCapture(e.pointerId);
@@ -1344,7 +1407,7 @@
             });
 
             resizer.addEventListener('pointermove', (e) => {
-                if (!isDraggingResizer || isWidthLocked) return;
+                if (!isDraggingResizer || !isStaffMode) return;
                 const rect = workspace.getBoundingClientRect();
                 if (rect.width <= 0) return;
                 const rawPct = ((e.clientX - rect.left) / rect.width) * 100;
@@ -1365,6 +1428,7 @@
                     applyLeftWidth(rawPct, true);
                 }
                 hideResizeBadge();
+                resetStaffAutoCloseTimer();
             };
 
             resizer.addEventListener('pointerup', finishDrag);
@@ -1372,7 +1436,7 @@
         }
 
         // ============================================================
-        // 5. キーボードUI生成・操作ロジック
+        // 6. キーボードUI生成・操作ロジック
         // ============================================================
         function buildKeyboards() {
             const hGrid = document.getElementById('hiraganaGrid');
@@ -1423,6 +1487,7 @@
         }
 
         function toggleKeyboardPane() {
+            resetStaffAutoCloseTimer();
             const ws = document.getElementById('workspace');
             const btn = document.getElementById('toggleKbBtn');
             const isHidden = ws.classList.toggle('kb-hidden');
@@ -1567,7 +1632,7 @@
         }
 
         // ============================================================
-        // 6. 受付フォーム・待ち状況管理・専用到着モーダル
+        // 7. 受付フォーム・待ち状況管理・専用到着モーダル
         // ============================================================
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -1763,7 +1828,6 @@
 
         socket.on('guestArrived', () => playSound('arrival'));
 
-        // ★ 管理画面からの呼び出し受信時にチャイム音＋音声読み上げ
         socket.on('guestCalled', (data) => {
             playSound('call');
             speakShopCall(data);
@@ -1848,7 +1912,6 @@
                 const now = audioContext.currentTime;
 
                 if (soundType === 'registered') {
-                    // 発券完了音「ピロン♪」
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
                     osc.type = 'sine';
@@ -1861,7 +1924,6 @@
                     osc.start(now);
                     osc.stop(now + 0.4);
                 } else if (soundType === 'call') {
-                    // 呼び出しチャイム音「ピンポーン♪」（高音→低音）
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
                     osc.type = 'sine';
@@ -1889,6 +1951,7 @@
         }
 
         // 初期化
+        initStaffLongPress();
         initShopVoice();
         initResizer();
         buildKeyboards();
