@@ -6,192 +6,1103 @@
     <title>松乃木飯店 店舗受付</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
-        header { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 10; }
-        header h1 { margin: 0; font-size: 1.8em; font-weight: bold; line-height: 1.2; }
-        header .subtitle { font-size: 1.1em; opacity: 0.9; margin-top: 5px; font-weight: bold; }
-        header .info-text { font-size: 1em; margin-top: 5px; opacity: 0.9; }
-        
-        .main-container { display: flex; flex: 1; overflow: hidden; height: calc(100% - 100px); }
-        
-        .left-panel { width: 450px; padding: 15px 15px 50px 15px; background: white; border-right: 3px solid #8b0000; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        
-        .section { background: #f8f9fa; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .section h2 { color: #8b0000; margin-bottom: 12px; font-size: 1.3em; }
-        
-        .form-box { background: white; padding: 15px; border-radius: 15px; border: 2px solid #d4b483; }
-        
-        input[type="text"] { padding: 10px; margin: 8px 0; width: 100%; font-size: 1em; border: 2px solid #ddd; border-radius: 8px; }
-        
-        .number-control { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .control-label { font-size: 0.9em; font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
-        .control-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; }
-        .num-display { font-size: 1.8em; font-weight: bold; min-width: 50px; text-align: center; color: #8b0000; }
-        .btn-step { background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%); border: 2px solid #ccc; width: 40px; height: 40px; border-radius: 50%; font-size: 1.5em; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-        .btn-step:hover { background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%); transform: scale(1.05); }
-        .quick-nums { display: flex; gap: 6px; margin-top: 6px; justify-content: center; flex-wrap: wrap; }
-        .btn-quick { background: #fff; border: 2px solid #d4b483; padding: 6px 12px; border-radius: 6px; font-size: 0.85em; cursor: pointer; transition: all 0.2s; font-weight: 600; }
-        .btn-quick:hover { background: #d4b483; color: white; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
 
-        .seat-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0; }
-        .btn-seat { background: #fff; border: 2px solid #d4b483; padding: 12px; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s; font-weight: 600; text-align: center; }
-        .btn-seat:hover { transform: translateY(-2px); }
-        .btn-seat.selected { background: #8b0000; color: white; border-color: #8b0000; }
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
 
-        /* ★ 無効化された座席ボタンのスタイル */
+        /* ヘッダー */
+        header {
+            background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%);
+            color: white;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+        }
+        header h1 {
+            font-size: 1.45em;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        header .info-text {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .btn-toggle-kb {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-toggle-kb:active {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        /* メイン2分割レイアウト（左：キーボード / 右：本来の受付画面） */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* ================= 左半分：キーボードパネル ================= */
+        .keyboard-pane {
+            width: 50%;
+            background: #f0f2f5;
+            border-right: 4px solid #8b0000;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 12px;
+            gap: 8px;
+            overflow: hidden;
+        }
+        .workspace.kb-hidden .keyboard-pane {
+            display: none;
+        }
+
+        .kb-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .kb-title {
+            font-size: 0.95em;
+            font-weight: bold;
+            color: #8b0000;
+            white-space: nowrap;
+        }
+        .kb-mode-switch {
+            display: flex;
+            background: #dce1e8;
+            border-radius: 10px;
+            padding: 3px;
+            gap: 4px;
+        }
+        .kb-mode-btn {
+            border: none;
+            background: transparent;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #444;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .kb-mode-btn.active {
+            background: #8b0000;
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* キーボード側の名前プレビュー枠 */
+        .kb-preview-box {
+            background: #fff;
+            border: 2px solid #8b0000;
+            border-radius: 10px;
+            padding: 8px 12px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+        .kb-preview-text {
+            font-size: 1.45em;
+            font-weight: bold;
+            color: #222;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+        }
+        .kb-preview-placeholder {
+            color: #aaa;
+            font-size: 0.8em;
+            font-weight: normal;
+        }
+        .kb-romaji-pending {
+            color: #d35400;
+            text-decoration: underline;
+            margin-left: 2px;
+        }
+        .kb-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #8b0000;
+            margin-left: 2px;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        .kb-char-count {
+            font-size: 0.8em;
+            color: #777;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        /* キーボード本体エリア */
+        .kb-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+        }
+
+        /* ひらがな五十音グリッド（右から左：あ〜わ の10列×5行） */
+        .hiragana-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 5px;
+            min-height: 0;
+        }
+
+        /* ローマ字QWERTYレイアウト */
+        .romaji-layout {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+            min-height: 0;
+        }
+        .romaji-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            flex: 1;
+            max-height: 76px;
+        }
+        .romaji-row .kb-key {
+            flex: 1;
+            max-width: 11%;
+            font-size: 1.35em;
+        }
+
+        /* 共通キーデザイン */
+        .kb-key {
+            background: #ffffff;
+            border: 1px solid #c5ccd6;
+            border-bottom: 3px solid #aab3c0;
+            border-radius: 8px;
+            font-size: 1.25em;
+            font-weight: bold;
+            color: #222;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.05s, background 0.1s;
+            touch-action: manipulation;
+        }
+        .kb-key:active {
+            transform: translateY(2px);
+            border-bottom-width: 1px;
+            background: #e9ecef;
+        }
+        .kb-key.empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* 下段ファンクションキー行 */
+        .kb-action-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            height: 54px;
+            flex-shrink: 0;
+        }
+        .kb-action-row.romaji-actions {
+            grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr;
+        }
+        .kb-key-mod {
+            background: #fff4e5;
+            border-color: #e6c291;
+            border-bottom-color: #d4a359;
+            color: #8a4b08;
+            font-size: 1.05em;
+        }
+        .kb-key-bs {
+            background: #fdecea;
+            border-color: #f5c2c0;
+            border-bottom-color: #e08b88;
+            color: #b71c1c;
+            font-size: 0.95em;
+        }
+        .kb-key-clear {
+            background: #eceff1;
+            border-color: #cfd8dc;
+            border-bottom-color: #90a4ae;
+            color: #455a64;
+            font-size: 0.95em;
+        }
+        .kb-key-space {
+            background: #e8f4fd;
+            border-color: #b3d7f5;
+            border-bottom-color: #7ab6e8;
+            color: #0d47a1;
+            font-size: 0.95em;
+        }
+
+        .kb-hint {
+            font-size: 0.78em;
+            color: #555;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* ================= 右半分：本来の店舗受付画面 ================= */
+        .original-pane {
+            width: 50%;
+            display: flex;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .workspace.kb-hidden .original-pane {
+            width: 100%;
+        }
+
+        /* 本来の左パネル（受付フォーム） */
+        .form-panel {
+            width: 55%;
+            padding: 10px;
+            background: white;
+            border-right: 2px solid #8b0000;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .workspace.kb-hidden .form-panel {
+            width: 450px;
+            flex-shrink: 0;
+        }
+
+        .form-box {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 2px solid #d4b483;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-title {
+            margin: 0 0 2px;
+            color: #8b0000;
+            text-align: center;
+            font-size: 1.05em;
+            font-weight: bold;
+        }
+
+        input[type="text"].name-field {
+            padding: 8px 10px;
+            width: 100%;
+            font-size: 1em;
+            font-weight: bold;
+            color: #222;
+            border: 2px solid #8b0000;
+            border-radius: 8px;
+            background: #fffdf9;
+            cursor: default;
+        }
+        input[type="text"].name-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2);
+        }
+
+        .number-control {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .control-label {
+            font-size: 0.82em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3px;
+            display: block;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .num-display {
+            font-size: 1.45em;
+            font-weight: bold;
+            min-width: 36px;
+            text-align: center;
+            color: #8b0000;
+        }
+        .btn-step {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            border: 2px solid #ccc;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            font-size: 1.25em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-step:active {
+            transform: scale(0.92);
+        }
+        .quick-nums {
+            display: flex;
+            gap: 4px;
+            margin-top: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-quick {
+            background: #fff;
+            border: 1.5px solid #d4b483;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.78em;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-quick:active {
+            background: #d4b483;
+            color: white;
+        }
+
+        .seat-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin: 4px 0;
+        }
+        .btn-seat {
+            background: #fff;
+            border: 2px solid #d4b483;
+            padding: 8px 4px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+        }
+        .btn-seat.selected {
+            background: #8b0000;
+            color: white;
+            border-color: #8b0000;
+        }
         .btn-seat:disabled {
             background: #e0e0e0 !important;
             border-color: #ccc !important;
             color: #999 !important;
             cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
             text-decoration: line-through;
         }
-        
-        .btn-submit { background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%); color: white; border: none; padding: 15px; width: 100%; font-size: 1.2em; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 3px 8px rgba(139, 0, 0, 0.3); margin-top: 10px; }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(139, 0, 0, 0.4); }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
-        .right-panel { flex: 1; padding: 15px; overflow-y: auto; background: rgba(255,255,255,0.95); }
-        
-        .total-summary { background: white; padding: 15px; border-radius: 12px; border: 2px solid #8b0000; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .total-label { font-size: 1.2em; color: #666; font-weight: bold; }
-        .total-number { font-size: 2.5em; color: #8b0000; font-weight: bold; margin: 0 10px; }
-        .total-unit { font-size: 1.2em; color: #666; }
+        .btn-submit {
+            background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%);
+            color: white;
+            border: none;
+            padding: 12px 8px;
+            width: 100%;
+            font-size: 1.05em;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 3px 8px rgba(139, 0, 0, 0.3);
+            margin-top: 4px;
+        }
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
 
-        .queue-section { margin-bottom: 20px; }
-        .queue-section h3 { color: #8b0000; font-size: 1.4em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #8b0000; }
-        
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-        .queue-card { background: linear-gradient(135deg, #fffcf5 0%, #fff8f0 100%); border: 3px solid #d4b483; border-radius: 12px; padding: 12px; text-align: center; transition: all 0.3s; cursor: pointer; position: relative; }
-        .queue-card:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
-        .queue-card.arrived { border-color: #27ae60; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
-        .queue-card.called { border-color: #e67e22; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); animation: pulse 2s infinite; }
-        .queue-card.absent { border-color: #e74c3c; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); opacity: 0.7; }
-        
+        /* 本来の右パネル（待ち状況一覧） */
+        .queue-panel {
+            width: 45%;
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .total-summary {
+            background: white;
+            padding: 10px 8px;
+            border-radius: 10px;
+            border: 2px solid #8b0000;
+            margin-bottom: 12px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        .total-label {
+            font-size: 0.88em;
+            color: #666;
+            font-weight: bold;
+            display: block;
+        }
+        .total-number {
+            font-size: 1.9em;
+            color: #8b0000;
+            font-weight: bold;
+            margin: 0 4px;
+        }
+        .total-unit {
+            font-size: 0.95em;
+            color: #666;
+        }
+
+        .queue-section {
+            margin-bottom: 14px;
+        }
+        .queue-section h3 {
+            color: #8b0000;
+            font-size: 0.98em;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #8b0000;
+        }
+        .queue-subnote {
+            color: #666;
+            margin-bottom: 6px;
+            font-size: 0.78em;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+        .queue-card {
+            background: linear-gradient(135deg, #fffcf5 0%, #fff8f0 100%);
+            border: 2px solid #d4b483;
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .queue-card.arrived {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+        .queue-card.called {
+            border-color: #e67e22;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            animation: pulse 2s infinite;
+        }
+        .queue-card.absent {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            opacity: 0.7;
+        }
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.03); }
         }
-        
-        .queue-id { font-weight: bold; color: #8b0000; font-size: 1.6em; display: block; margin-bottom: 6px; }
-        .queue-info { font-size: 0.9em; color: #666; line-height: 1.4; }
-        .queue-status { font-size: 0.8em; font-weight: bold; margin-top: 6px; padding: 4px; border-radius: 4px; }
+
+        .queue-id {
+            font-weight: bold;
+            color: #8b0000;
+            font-size: 1.25em;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .queue-name {
+            font-size: 0.82em;
+            color: #8b0000;
+            font-weight: bold;
+            margin-bottom: 2px;
+            word-break: break-all;
+        }
+        .queue-info {
+            font-size: 0.78em;
+            color: #555;
+            line-height: 1.35;
+        }
+        .queue-status {
+            font-size: 0.72em;
+            font-weight: bold;
+            margin-top: 4px;
+            padding: 3px;
+            border-radius: 4px;
+        }
         .status-arrived { background: #27ae60; color: white; }
         .status-called { background: #e67e22; color: white; }
         .status-absent { background: #e74c3c; color: white; }
 
-        .complete-id { font-size: 4em; color: #8b0000; font-weight: bold; text-align: center; margin: 15px 0; }
-        .stop-message { background: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 0.95em; }
+        .complete-id {
+            font-size: 3.2em;
+            color: #8b0000;
+            font-weight: bold;
+            text-align: center;
+            margin: 12px 0;
+        }
+        .stop-message {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
 
-        @media (max-width: 800px) {
-            .main-container { flex-direction: column; }
-            .left-panel { width: 100%; border-right: none; border-bottom: 3px solid #8b0000; max-height: 50vh; }
-            .right-panel { max-height: 50vh; }
+        /* 縦画面・極小幅でのフォールバック */
+        @media (max-width: 900px) {
+            .original-pane {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            .form-panel, .queue-panel {
+                width: 100%;
+                border-right: none;
+                overflow-y: visible;
+            }
+            .form-panel {
+                border-bottom: 2px solid #8b0000;
+            }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>🏮 松乃木飯店</h1>
-        <div class="info-text">順番に、ご案内いたします。</div>
+        <div class="header-left">
+            <h1>🏮 松乃木飯店</h1>
+            <div class="info-text">順番に、ご案内いたします。</div>
+        </div>
+        <button type="button" id="toggleKbBtn" class="btn-toggle-kb" onclick="toggleKeyboardPane()">⌨️ キーボードを隠す</button>
     </header>
-    
-    <div class="main-container">
-        <div class="left-panel">
-            <div id="formArea" class="form-box">
-                <h3 style="margin:0 0 12px; color:#8b0000; text-align:center; font-size:1.2em;">👥 店舗で直接受付</h3>
-                
-                <div id="stopMessage" class="stop-message" style="display:none;">
-                    ⚠️ 現在受付を停止しています
+
+    <div id="workspace" class="workspace">
+        <!-- ================= 左半分：名前入力用キーボード ================= -->
+        <section class="keyboard-pane" aria-label="お名前入力キーボード">
+            <div class="kb-top-bar">
+                <div class="kb-title">⌨️ お名前入力（省略可）</div>
+                <div class="kb-mode-switch" role="tablist">
+                    <button type="button" id="modeBtnHiragana" class="kb-mode-btn active" onclick="setKeyboardMode('hiragana')">あいう (ひらがな)</button>
+                    <button type="button" id="modeBtnRomaji" class="kb-mode-btn" onclick="setKeyboardMode('romaji')">ABC (ローマ字)</button>
                 </div>
-                
-                <label class="control-label">📝 お名前（任意）</label>
-                <input type="text" id="nameInput" placeholder="お名前を入力（省略可）" maxlength="20">
-                
-                <div class="number-control">
-                    <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('adults', -1)">−</button>
-                        <span id="display-adults" class="num-display">2</span>
-                        <button class="btn-step" onclick="changeNum('adults', 1)">+</button>
+            </div>
+
+            <div class="kb-preview-box">
+                <div id="kbPreviewText" class="kb-preview-text">
+                    <span class="kb-preview-placeholder">左のキーボードでお名前を入力できます（省略可）</span>
+                </div>
+                <span id="kbCharCount" class="kb-char-count">0 / 20</span>
+            </div>
+
+            <!-- ひらがなモード -->
+            <div id="hiraganaPanel" class="kb-body">
+                <div id="hiraganaGrid" class="hiragana-grid"></div>
+                <div class="kb-action-row">
+                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('dakuten')">゛(濁点)</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('handakuten')">゜(半濁)</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('small')">小 (ゃゅょっ)</button>
+                    <button type="button" class="kb-key kb-key-space" onclick="inputDirectChar(' ')">スペース</button>
+                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字消す</button>
+                    <button type="button" class="kb-key kb-key-clear" onclick="clearName()">全消去</button>
+                </div>
+                <div class="kb-hint">文字を押した後に「゛」「゜」「小」を押すと変換できます（名前なしでも右から受付可能です）</div>
+            </div>
+
+            <!-- ローマ字モード -->
+            <div id="romajiPanel" class="kb-body" style="display: none;">
+                <div id="romajiLayout" class="romaji-layout"></div>
+                <div class="kb-action-row romaji-actions">
+                    <button type="button" class="kb-key kb-key-space" onclick="handleRomajiSpace()">スペース</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="handleRomajiKey('-')">ー (伸ばす)</button>
+                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字消す</button>
+                    <button type="button" class="kb-key kb-key-clear" onclick="clearName()">全消去</button>
+                </div>
+                <div class="kb-hint">例: yamada → やまだ / tanaka → たなか / sato- → さとー（「ん」は nn）</div>
+            </div>
+        </section>
+
+        <!-- ================= 右半分：本来の店舗受付画面 ================= -->
+        <section class="original-pane">
+            <!-- 受付フォーム -->
+            <div class="form-panel">
+                <div id="formArea" class="form-box">
+                    <h3 class="form-title">👥 店舗で直接受付</h3>
+
+                    <div id="stopMessage" class="stop-message" style="display:none;">
+                        ⚠️ 現在受付を停止しています
                     </div>
-                    <div class="quick-nums">
-                        <button class="btn-quick" onclick="setNum('adults', 1)">1名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 2)">2名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 4)">4名</button>
-                        <button class="btn-quick" onclick="setNum('adults', 6)">6名</button>
+
+                    <div>
+                        <label class="control-label" for="nameInput">📝 お名前（任意・左画面で入力）</label>
+                        <input
+                            type="text"
+                            id="nameInput"
+                            class="name-field"
+                            placeholder="省略可（左キーボードで入力）"
+                            maxlength="20"
+                            readonly
+                            inputmode="none"
+                        >
                     </div>
-                </div>
 
-                <div class="number-control">
-                    <label class="control-label">👧 子供 (小学生)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('children', -1)">−</button>
-                        <span id="display-children" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('children', 1)">+</button>
+                    <div class="number-control">
+                        <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
+                        <div class="control-row">
+                            <button type="button" class="btn-step" onclick="changeNum('adults', -1)">−</button>
+                            <span id="display-adults" class="num-display">2</span>
+                            <button type="button" class="btn-step" onclick="changeNum('adults', 1)">+</button>
+                        </div>
+                        <div class="quick-nums">
+                            <button type="button" class="btn-quick" onclick="setNum('adults', 1)">1名</button>
+                            <button type="button" class="btn-quick" onclick="setNum('adults', 2)">2名</button>
+                            <button type="button" class="btn-quick" onclick="setNum('adults', 4)">4名</button>
+                            <button type="button" class="btn-quick" onclick="setNum('adults', 6)">6名</button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="number-control">
-                    <label class="control-label">👶 幼児 (未就学児)</label>
-                    <div class="control-row">
-                        <button class="btn-step" onclick="changeNum('infants', -1)">−</button>
-                        <span id="display-infants" class="num-display">0</span>
-                        <button class="btn-step" onclick="changeNum('infants', 1)">+</button>
+                    <div class="number-control">
+                        <label class="control-label">👧 子供 (小学生)</label>
+                        <div class="control-row">
+                            <button type="button" class="btn-step" onclick="changeNum('children', -1)">−</button>
+                            <span id="display-children" class="num-display">0</span>
+                            <button type="button" class="btn-step" onclick="changeNum('children', 1)">+</button>
+                        </div>
                     </div>
+
+                    <div class="number-control">
+                        <label class="control-label">👶 幼児 (未就学児)</label>
+                        <div class="control-row">
+                            <button type="button" class="btn-step" onclick="changeNum('infants', -1)">−</button>
+                            <span id="display-infants" class="num-display">0</span>
+                            <button type="button" class="btn-step" onclick="changeNum('infants', 1)">+</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="control-label">🪑 座席のご希望</label>
+                        <div class="seat-buttons">
+                            <button type="button" id="seat-どこでも" class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
+                            <button type="button" id="seat-カウンター" class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
+                            <button type="button" id="seat-テーブル" class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
+                            <button type="button" id="seat-お座敷" class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+                        </div>
+                    </div>
+
+                    <button type="button" id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定（発券する）</button>
                 </div>
 
-                <!-- ★ 各ボタンにidを付与 -->
-                <label class="control-label">🪑 座席のご希望</label>
-                <div class="seat-buttons">
-                    <button type="button" id="seat-どこでも" class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                    <button type="button" id="seat-カウンター" class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                    <button type="button" id="seat-テーブル" class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                    <button type="button" id="seat-お座敷" class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+                <div id="ticketArea" class="form-box" style="display:none; border: 3px solid #8b0000;">
+                    <p style="color:#27ae60; font-size:1.15em; font-weight:bold; text-align:center; margin-bottom:6px;">✅ 受付完了しました</p>
+                    <div id="num" class="complete-id">--</div>
+                    <button type="button" class="btn-submit" onclick="closeTicket()" style="background:#666;">次の受付へ</button>
                 </div>
-                
-                <button id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定（発券する）</button>
             </div>
 
-            <div id="ticketArea" class="form-box" style="display:none; border: 3px solid #8b0000;">
-                <p style="color:#27ae60; font-size:1.2em; font-weight:bold; text-align:center; margin-bottom:10px;">✅ 受付完了しました</p>
-                <div id="num" class="complete-id">--</div>
-                <button class="btn-submit" onclick="closeTicket()" style="background:#666;">次の受付へ</button>
-            </div>
-        </div>
+            <!-- 待ち状況一覧 -->
+            <div class="queue-panel">
+                <div class="total-summary">
+                    <span class="total-label">現在の合計待ち組数</span>
+                    <span id="totalWaitCount" class="total-number">0</span>
+                    <span class="total-unit">組</span>
+                </div>
 
-        <div class="right-panel">
-            <div class="total-summary">
-                <span class="total-label">現在の合計待ち組数:</span>
-                <span id="totalWaitCount" class="total-number">0</span>
-                <span class="total-unit">組</span>
-            </div>
+                <div class="queue-section">
+                    <h3>📱 ネット予約の方 - 到着確認</h3>
+                    <p class="queue-subnote">※ お客様に番号をタップしてもらってください</p>
+                    <div id="queueListWeb" class="grid-container"></div>
+                </div>
 
-            <div class="queue-section">
-                <h3>📱 ネット予約の方 - 到着確認</h3>
-                <p style="color:#666; margin-bottom:10px; font-size:0.95em;">※ お客様に番号をタップしてもらってください</p>
-                <div id="queueListWeb" class="grid-container"></div>
+                <div class="queue-section">
+                    <h3>🏪 店舗受付の待ち状況</h3>
+                    <div id="queueListShop" class="grid-container"></div>
+                </div>
             </div>
-
-            <div class="queue-section">
-                <h3>🏪 店舗受付の待ち状況</h3>
-                <div id="queueListShop" class="grid-container"></div>
-            </div>
-        </div>
+        </section>
     </div>
 
     <script>
+        'use strict';
+
+        // ============================================================
+        // 1. 状態管理・定数定義
+        // ============================================================
         const socket = io();
         const type = 'shop';
+        const MAX_NAME_LENGTH = 20;
+
         let nums = { adults: 2, children: 0, infants: 0 };
         let isAccepting = true;
         let selectedSeat = 'どこでも';
-        
-        // ★ ブロックされている座席を保持する配列
         let blockedSeats = [];
+        let ticketAutoCloseTimer = null;
+
+        // キーボード状態
+        let currentKbMode = 'hiragana'; // 'hiragana' | 'romaji'
+        let committedName = '';
+        let romajiBuffer = '';
+
+        // 五十音テーブル（日本の受付機標準：右端が「あ行」、左端が「わ行」）
+        const HIRAGANA_COLUMNS = [
+            ['わ', 'を', 'ん', 'ー', ''],
+            ['ら', 'り', 'る', 'れ', 'ろ'],
+            ['や', '',   'ゆ', '',   'よ'],
+            ['ま', 'み', 'む', 'め', 'も'],
+            ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+            ['な', 'に', 'ぬ', 'ね', 'の'],
+            ['た', 'ち', 'つ', 'て', 'と'],
+            ['さ', 'し', 'す', 'せ', 'そ'],
+            ['か', 'き', 'く', 'け', 'こ'],
+            ['あ', 'い', 'う', 'え', 'お']
+        ];
+
+        // 濁点・半濁点・小文字の双方向変換マップ
+        const DAKUTEN_MAP = {
+            'か':'が', 'き':'ぎ', 'く':'ぐ', 'け':'げ', 'こ':'ご',
+            'さ':'ざ', 'し':'じ', 'す':'ず', 'せ':'ぜ', 'そ':'ぞ',
+            'た':'だ', 'ち':'ぢ', 'つ':'づ', 'て':'で', 'と':'ど',
+            'は':'ば', 'ひ':'び', 'ふ':'ぶ', 'へ':'べ', 'ほ':'ぼ',
+            'ぱ':'ば', 'ぴ':'び', 'ぷ':'ぶ', 'ぺ':'べ', 'ぽ':'ぼ',
+            'う':'ゔ',
+            'が':'か', 'ぎ':'き', 'ぐ':'く', 'げ':'け', 'ご':'こ',
+            'ざ':'さ', 'じ':'し', 'ず':'す', 'ぜ':'せ', 'ぞ':'そ',
+            'だ':'た', 'ぢ':'ち', 'づ':'つ', 'で':'て', 'ど':'と',
+            'ば':'は', 'び':'ひ', 'ぶ':'ふ', 'べ':'へ', 'ぼ':'ほ',
+            'ゔ':'う'
+        };
+
+        const HANDAKUTEN_MAP = {
+            'は':'ぱ', 'ひ':'ぴ', 'ふ':'ぷ', 'へ':'ぺ', 'ほ':'ぽ',
+            'ば':'ぱ', 'び':'ぴ', 'ぶ':'ぷ', 'べ':'ぺ', 'ぼ':'ぽ',
+            'ぱ':'は', 'ぴ':'ひ', 'ぷ':'ふ', 'ぺ':'へ', 'ぽ':'ほ'
+        };
+
+        const SMALL_MAP = {
+            'あ':'ぁ', 'い':'ぃ', 'う':'ぅ', 'え':'ぇ', 'お':'ぉ',
+            'や':'ゃ', 'ゆ':'ゅ', 'よ':'ょ', 'つ':'っ', 'わ':'ゎ',
+            'ぁ':'あ', 'ぃ':'い', 'ぅ':'う', 'ぇ':'え', 'ぉ':'お',
+            'ゃ':'や', 'ゅ':'ゆ', 'ょ':'よ', 'っ':'つ', 'ゎ':'わ'
+        };
+
+        // QWERTY配列
+        const ROMAJI_ROWS = [
+            ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+            ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+            ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+        ];
+
+        // ローマ字→ひらがな変換テーブル（ヘボン式・訓令式・拗音・小文字対応）
+        const ROMAJI_TABLE = {
+            'a':'あ', 'i':'い', 'u':'う', 'e':'え', 'o':'お',
+            'ka':'か', 'ki':'き', 'ku':'く', 'ke':'け', 'ko':'こ',
+            'sa':'さ', 'si':'し', 'shi':'し', 'su':'す', 'se':'せ', 'so':'そ',
+            'ta':'た', 'ti':'ち', 'chi':'ち', 'tu':'つ', 'tsu':'つ', 'te':'て', 'to':'と',
+            'na':'な', 'ni':'に', 'nu':'ぬ', 'ne':'ね', 'no':'の',
+            'ha':'は', 'hi':'ひ', 'hu':'ふ', 'fu':'ふ', 'he':'へ', 'ho':'ほ',
+            'ma':'ま', 'mi':'み', 'mu':'む', 'me':'め', 'mo':'も',
+            'ya':'や', 'yi':'い', 'yu':'ゆ', 'ye':'いぇ', 'yo':'よ',
+            'ra':'ら', 'ri':'り', 'ru':'る', 're':'れ', 'ro':'ろ',
+            'wa':'わ', 'wi':'うぃ', 'wu':'う', 'we':'うぇ', 'wo':'を',
+            'nn':'ん', "n'":'ん', 'xn':'ん',
+            'ga':'が', 'gi':'ぎ', 'gu':'ぐ', 'ge':'げ', 'go':'ご',
+            'za':'ざ', 'zi':'じ', 'ji':'じ', 'zu':'ず', 'ze':'ぜ', 'zo':'ぞ',
+            'da':'だ', 'di':'ぢ', 'du':'づ', 'de':'で', 'do':'ど',
+            'ba':'ば', 'bi':'び', 'bu':'ぶ', 'be':'べ', 'bo':'ぼ',
+            'pa':'ぱ', 'pi':'ぴ', 'pu':'ぷ', 'pe':'ぺ', 'po':'ぽ',
+            'va':'ゔぁ', 'vi':'ゔぃ', 'vu':'ゔ', 've':'ゔぇ', 'vo':'ゔぉ',
+            'kya':'きゃ', 'kyi':'きぃ', 'kyu':'きゅ', 'kye':'きぇ', 'kyo':'きょ',
+            'gya':'ぎゃ', 'gyi':'ぎぃ', 'gyu':'ぎゅ', 'gye':'ぎぇ', 'gyo':'ぎょ',
+            'sya':'しゃ', 'syi':'しぃ', 'syu':'しゅ', 'sye':'しぇ', 'syo':'しょ',
+            'sha':'しゃ', 'shu':'しゅ', 'she':'しぇ', 'sho':'しょ',
+            'zya':'じゃ', 'zyi':'じぃ', 'zyu':'じゅ', 'zye':'じぇ', 'zyo':'じょ',
+            'ja':'じゃ', 'ju':'じゅ', 'je':'じぇ', 'jo':'じょ',
+            'jya':'じゃ', 'jyi':'じぃ', 'jyu':'じゅ', 'jye':'じぇ', 'jyo':'じょ',
+            'tya':'ちゃ', 'tyi':'ちぃ', 'tyu':'ちゅ', 'tye':'ちぇ', 'tyo':'ちょ',
+            'cha':'ちゃ', 'chu':'ちゅ', 'che':'ちぇ', 'cho':'ちょ',
+            'cya':'ちゃ', 'cyi':'ちぃ', 'cyu':'ちゅ', 'cye':'ちぇ', 'cyo':'ちょ',
+            'dya':'ぢゃ', 'dyi':'ぢぃ', 'dyu':'ぢゅ', 'dye':'ぢぇ', 'dyo':'ぢょ',
+            'nya':'にゃ', 'nyi':'にぃ', 'nyu':'にゅ', 'nye':'にぇ', 'nyo':'にょ',
+            'hya':'ひゃ', 'hyi':'ひぃ', 'hyu':'ひゅ', 'hye':'ひぇ', 'hyo':'ひょ',
+            'bya':'びゃ', 'byi':'びぃ', 'byu':'びゅ', 'bye':'びぇ', 'byo':'びょ',
+            'pya':'ぴゃ', 'pyi':'ぴぃ', 'pyu':'ぴゅ', 'pye':'ぴぇ', 'pyo':'ぴょ',
+            'mya':'みゃ', 'myi':'みぃ', 'myu':'みゅ', 'mye':'みぇ', 'myo':'みょ',
+            'rya':'りゃ', 'ryi':'りぃ', 'ryu':'りゅ', 'rye':'りぇ', 'ryo':'りょ',
+            'fa':'ふぁ', 'fi':'ふぃ', 'fe':'ふぇ', 'fo':'ふぉ',
+            'tsa':'つぁ', 'tsi':'つぃ', 'tse':'つぇ', 'tso':'つぉ',
+            'thi':'てぃ', 'dhi':'でぃ', 'twu':'とぅ', 'dwu':'どぅ',
+            'la':'ぁ', 'li':'ぃ', 'lu':'ぅ', 'le':'ぇ', 'lo':'ぉ',
+            'xa':'ぁ', 'xi':'ぃ', 'xu':'ぅ', 'xe':'ぇ', 'xo':'ぉ',
+            'lya':'ゃ', 'lyu':'ゅ', 'lyo':'ょ', 'xya':'ゃ', 'xyu':'ゅ', 'xyo':'ょ',
+            'ltu':'っ', 'ltsu':'っ', 'xtu':'っ', 'xtsu':'っ',
+            'lwa':'ゎ', 'xwa':'ゎ',
+            '-':'ー'
+        };
+        const ROMAJI_KEYS = Object.keys(ROMAJI_TABLE);
+
+        // ============================================================
+        // 2. キーボードUI生成・操作ロジック
+        // ============================================================
+        function buildKeyboards() {
+            // ひらがなグリッド生成（5行×10列）
+            const hGrid = document.getElementById('hiraganaGrid');
+            hGrid.innerHTML = '';
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const ch = HIRAGANA_COLUMNS[col][row];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    if (!ch) {
+                        btn.className = 'kb-key empty';
+                        btn.disabled = true;
+                    } else {
+                        btn.className = 'kb-key';
+                        btn.textContent = ch;
+                        btn.addEventListener('click', () => inputDirectChar(ch));
+                    }
+                    hGrid.appendChild(btn);
+                }
+            }
+
+            // ローマ字QWERTY生成
+            const rLayout = document.getElementById('romajiLayout');
+            rLayout.innerHTML = '';
+            ROMAJI_ROWS.forEach(rowKeys => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'romaji-row';
+                rowKeys.forEach(key => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'kb-key';
+                    btn.textContent = key.toUpperCase();
+                    btn.addEventListener('click', () => handleRomajiKey(key));
+                    rowDiv.appendChild(btn);
+                });
+                rLayout.appendChild(rowDiv);
+            });
+        }
+
+        function setKeyboardMode(mode) {
+            flushPendingRomaji();
+            currentKbMode = mode;
+            const isHiragana = mode === 'hiragana';
+            document.getElementById('hiraganaPanel').style.display = isHiragana ? 'flex' : 'none';
+            document.getElementById('romajiPanel').style.display = isHiragana ? 'none' : 'flex';
+            document.getElementById('modeBtnHiragana').classList.toggle('active', isHiragana);
+            document.getElementById('modeBtnRomaji').classList.toggle('active', !isHiragana);
+            syncNameDisplay();
+        }
+
+        function toggleKeyboardPane() {
+            const ws = document.getElementById('workspace');
+            const btn = document.getElementById('toggleKbBtn');
+            const isHidden = ws.classList.toggle('kb-hidden');
+            btn.textContent = isHidden ? '⌨️ キーボードを表示' : '⌨️ キーボードを隠す';
+        }
+
+        function appendCommitted(str) {
+            if (!str) return;
+            const remain = MAX_NAME_LENGTH - committedName.length;
+            if (remain <= 0) return;
+            committedName += str.slice(0, remain);
+        }
+
+        function inputDirectChar(ch) {
+            if (committedName.length >= MAX_NAME_LENGTH) return;
+            committedName += ch;
+            syncNameDisplay();
+        }
+
+        function applyModifier(modType) {
+            if (!committedName) return;
+            const lastChar = committedName.slice(-1);
+            let converted = null;
+            if (modType === 'dakuten') converted = DAKUTEN_MAP[lastChar];
+            else if (modType === 'handakuten') converted = HANDAKUTEN_MAP[lastChar];
+            else if (modType === 'small') converted = SMALL_MAP[lastChar];
+
+            if (converted) {
+                committedName = committedName.slice(0, -1) + converted;
+                syncNameDisplay();
+            }
+        }
+
+        function handleRomajiKey(key) {
+            if (committedName.length >= MAX_NAME_LENGTH) return;
+
+            // 長音キー処理
+            if (key === '-') {
+                flushPendingRomaji();
+                appendCommitted('ー');
+                syncNameDisplay();
+                return;
+            }
+
+            romajiBuffer += key.toLowerCase();
+
+            // バッファを順次確定処理
+            while (romajiBuffer.length > 0) {
+                if (committedName.length >= MAX_NAME_LENGTH) {
+                    romajiBuffer = '';
+                    break;
+                }
+
+                // 1. 促音判定（同じ子音が2連続、ただし n と母音は除く）
+                if (
+                    romajiBuffer.length >= 2 &&
+                    romajiBuffer[0] === romajiBuffer[1] &&
+                    !'aiueon'.includes(romajiBuffer[0])
+                ) {
+                    appendCommitted('っ');
+                    romajiBuffer = romajiBuffer.slice(1);
+                    continue;
+                }
+
+                // 2. 単独の「n」＋後続文字（母音・y・n以外）→「ん」として確定
+                if (
+                    romajiBuffer.length >= 2 &&
+                    romajiBuffer[0] === 'n' &&
+                    !'aiueoyn\''.includes(romajiBuffer[1])
+                ) {
+                    appendCommitted('ん');
+                    romajiBuffer = romajiBuffer.slice(1);
+                    continue;
+                }
+
+                // 3. 完全一致チェック
+                if (Object.prototype.hasOwnProperty.call(ROMAJI_TABLE, romajiBuffer)) {
+                    appendCommitted(ROMAJI_TABLE[romajiBuffer]);
+                    romajiBuffer = '';
+                    break;
+                }
+
+                // 4. 前方一致する候補があるかチェック
+                const hasPrefix = ROMAJI_KEYS.some(k => k.startsWith(romajiBuffer));
+                if (hasPrefix) {
+                    // 次の文字入力を待つ
+                    break;
+                }
+
+                // 5. 一致候補がない場合（例: "kt" のような無効な組み合わせ）
+                // 先頭1文字を破棄して残りを再評価し、入力詰まりを防ぐ
+                romajiBuffer = romajiBuffer.slice(1);
+            }
+
+            syncNameDisplay();
+        }
+
+        function handleRomajiSpace() {
+            flushPendingRomaji();
+            inputDirectChar(' ');
+        }
+
+        function flushPendingRomaji() {
+            if (romajiBuffer === 'n') {
+                appendCommitted('ん');
+            }
+            romajiBuffer = '';
+        }
+
+        function handleBackspace() {
+            if (romajiBuffer.length > 0) {
+                romajiBuffer = romajiBuffer.slice(0, -1);
+            } else if (committedName.length > 0) {
+                committedName = committedName.slice(0, -1);
+            }
+            syncNameDisplay();
+        }
+
+        function clearName() {
+            committedName = '';
+            romajiBuffer = '';
+            syncNameDisplay();
+        }
+
+        function syncNameDisplay() {
+            const nameInput = document.getElementById('nameInput');
+            const previewEl = document.getElementById('kbPreviewText');
+            const countEl = document.getElementById('kbCharCount');
+
+            // フォーム側の入力欄へ同期
+            nameInput.value = committedName + romajiBuffer;
+            countEl.textContent = `${committedName.length} / ${MAX_NAME_LENGTH}`;
+
+            // キーボード側のリッチプレビュー更新（XSS安全なDOM生成）
+            previewEl.innerHTML = '';
+            if (!committedName && !romajiBuffer) {
+                const ph = document.createElement('span');
+                ph.className = 'kb-preview-placeholder';
+                ph.textContent = 'お名前を入力できます（省略可）';
+                previewEl.appendChild(ph);
+            } else {
+                if (committedName) {
+                    previewEl.appendChild(document.createTextNode(committedName));
+                }
+                if (romajiBuffer) {
+                    const pendingSpan = document.createElement('span');
+                    pendingSpan.className = 'kb-romaji-pending';
+                    pendingSpan.textContent = romajiBuffer;
+                    previewEl.appendChild(pendingSpan);
+                }
+                const cursor = document.createElement('span');
+                cursor.className = 'kb-cursor';
+                previewEl.appendChild(cursor);
+            }
+        }
+
+        // ============================================================
+        // 3. 受付フォーム・待ち状況管理（既存機能＋XSS対策）
+        // ============================================================
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function updateDisplays() {
             document.getElementById('display-adults').innerText = nums.adults;
@@ -201,7 +1112,7 @@
 
         function changeNum(key, step) {
             nums[key] = Math.max(0, nums[key] + step);
-            if(key === 'adults' && nums.adults < 1) nums.adults = 1;
+            if (key === 'adults' && nums.adults < 1) nums.adults = 1;
             updateDisplays();
         }
 
@@ -212,24 +1123,18 @@
 
         function selectSeat(seat) {
             if (blockedSeats.includes(seat)) return;
-
             selectedSeat = seat;
             document.querySelectorAll('.btn-seat').forEach(btn => {
-                btn.classList.remove('selected');
-                if (btn.textContent === seat) {
-                    btn.classList.add('selected');
-                }
+                btn.classList.toggle('selected', btn.textContent === seat);
             });
         }
 
-        // ★ 座席ボタンのUI更新
         function updateSeatButtons() {
             ['カウンター', 'テーブル', 'お座敷'].forEach(seat => {
                 const btn = document.getElementById(`seat-${seat}`);
                 if (!btn) return;
                 const isBlocked = blockedSeats.includes(seat);
                 btn.disabled = isBlocked;
-                
                 if (isBlocked && selectedSeat === seat) {
                     selectSeat('どこでも');
                 }
@@ -238,18 +1143,14 @@
 
         socket.on('init', d => {
             isAccepting = d.isAccepting;
-
-            // ★追加
             if (d.blockedSeats) {
                 blockedSeats = d.blockedSeats;
                 updateSeatButtons();
             }
-
             updateAcceptanceUI();
             updateQueue(d);
         });
 
-        // ★ サーバーから座席ブロック状態の変更を受信
         socket.on('seatBlockChanged', data => {
             blockedSeats = data.blockedSeats || [];
             updateSeatButtons();
@@ -258,14 +1159,16 @@
         socket.on('update', d => updateQueue(d));
 
         function updateQueue(d) {
-            document.getElementById('totalWaitCount').innerText = d.queue ? d.queue.length : 0;
-            const webQueue = d.queue.filter(g => g.type === 'web');
-            const shopQueue = d.queue.filter(g => g.type === 'shop');
+            const queue = Array.isArray(d.queue) ? d.queue : [];
+            document.getElementById('totalWaitCount').innerText = queue.length;
+
+            const webQueue = queue.filter(g => g.type === 'web');
+            const shopQueue = queue.filter(g => g.type === 'shop');
             const listWeb = document.getElementById('queueListWeb');
             const listShop = document.getElementById('queueListShop');
-            
+
             if (webQueue.length === 0) {
-                listWeb.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#999; font-size:1em;">ネット予約のお客様はいません</div>';
+                listWeb.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:16px; color:#999; font-size:0.88em;">ネット予約のお客様はいません</div>';
             } else {
                 listWeb.innerHTML = webQueue.map(g => {
                     let statusBadge = '';
@@ -280,26 +1183,27 @@
                         statusBadge = '<div class="queue-status status-absent">⚠️ 不在</div>';
                         cardClass = 'absent';
                     }
-                    const nameDisplay = g.name ? `<div style="font-size:0.85em;color:#8b0000;font-weight:bold;">${g.name}様</div>` : '';
-                    const arrivalDisplay = g.arrivalTime ? `<div style="color:#d35400;font-weight:bold;margin-bottom:3px;">⏰ 到着予想: ${g.arrivalTime}</div>` : '';
+                    const safeId = escapeHtml(g.displayId);
+                    const safeName = g.name ? `<div class="queue-name">${escapeHtml(g.name)}様</div>` : '';
+                    const safeArrival = g.arrivalTime ? `<div style="color:#d35400;font-weight:bold;margin-bottom:2px;">⏰ ${escapeHtml(g.arrivalTime)}</div>` : '';
                     return `
-                        <div class="queue-card ${cardClass}" onclick="markArrived('${g.displayId}', ${g.arrived})">
-                            <span class="queue-id">${g.displayId}</span>
-                            ${nameDisplay}
+                        <div class="queue-card ${cardClass}" onclick="markArrived('${safeId}', ${Boolean(g.arrived)})">
+                            <span class="queue-id">${safeId}</span>
+                            ${safeName}
                             <div class="queue-info">
-                                👥 ${g.adults}名 / ${g.children}名 / ${g.infants}名<br>
-                                🪑 ${g.pref}<br>
-                                ${arrivalDisplay}
-                                🕐 ${g.time}
+                                👥 ${Number(g.adults) || 0}/${Number(g.children) || 0}/${Number(g.infants) || 0}<br>
+                                🪑 ${escapeHtml(g.pref)}<br>
+                                ${safeArrival}
+                                🕐 ${escapeHtml(g.time)}
                             </div>
                             ${statusBadge}
                         </div>
                     `;
                 }).join('');
             }
-            
+
             if (shopQueue.length === 0) {
-                listShop.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#999; font-size:1em;">店舗受付のお客様はいません</div>';
+                listShop.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:16px; color:#999; font-size:0.88em;">店舗受付のお客様はいません</div>';
             } else {
                 listShop.innerHTML = shopQueue.map(g => {
                     let statusBadge = '';
@@ -311,15 +1215,16 @@
                         statusBadge = '<div class="queue-status status-absent">⚠️ 不在</div>';
                         cardClass = 'absent';
                     }
-                    const nameDisplay = g.name ? `<div style="font-size:0.85em;color:#8b0000;font-weight:bold;">${g.name}様</div>` : '';
+                    const safeId = escapeHtml(g.displayId);
+                    const safeName = g.name ? `<div class="queue-name">${escapeHtml(g.name)}様</div>` : '';
                     return `
                         <div class="queue-card ${cardClass}">
-                            <span class="queue-id">${g.displayId}</span>
-                            ${nameDisplay}
+                            <span class="queue-id">${safeId}</span>
+                            ${safeName}
                             <div class="queue-info">
-                                👥 ${g.adults}名 / ${g.children}名 / ${g.infants}名<br>
-                                🪑 ${g.pref}<br>
-                                🕐 ${g.time}
+                                👥 ${Number(g.adults) || 0}/${Number(g.children) || 0}/${Number(g.infants) || 0}<br>
+                                🪑 ${escapeHtml(g.pref)}<br>
+                                🕐 ${escapeHtml(g.time)}
                             </div>
                             ${statusBadge}
                         </div>
@@ -338,13 +1243,13 @@
             }
         }
 
-        socket.on('statusChange', s => { 
+        socket.on('statusChange', s => {
             isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             updateAcceptanceUI();
         });
 
-        socket.on('guestArrived', data => playSound('arrival'));
-        socket.on('guestCalled', data => playSound('call'));
+        socket.on('guestArrived', () => playSound('arrival'));
+        socket.on('guestCalled', () => playSound('call'));
         socket.on('dailyReset', () => {
             alert('🔄 日次リセットが実行されました。新しい1日が始まります！');
             location.reload();
@@ -354,7 +1259,7 @@
             const btn = document.getElementById('regBtn');
             const msg = document.getElementById('stopMessage');
             btn.disabled = !isAccepting || nums.adults < 1;
-            btn.innerText = isAccepting ? "✓ 受付確定（発券する）" : "⏸️ 受付停止中";
+            btn.innerText = isAccepting ? '✓ 受付確定（発券する）' : '⏸️ 受付停止中';
             msg.style.display = isAccepting ? 'none' : 'block';
         }
 
@@ -367,50 +1272,70 @@
                 alert('大人の人数は1名以上必要です。');
                 return;
             }
-            const name = document.getElementById('nameInput').value.trim();
+            // 未確定のローマ字（末尾の 'n' 等）を確定してから送信（空欄でもそのまま送信可能）
+            flushPendingRomaji();
+            syncNameDisplay();
+            const name = committedName.trim();
             socket.emit('register', { type, ...nums, pref: selectedSeat, name });
         }
 
         function closeTicket() {
-            document.getElementById('ticketArea').style.display='none';
-            document.getElementById('formArea').style.display='block';
+            if (ticketAutoCloseTimer) {
+                clearTimeout(ticketAutoCloseTimer);
+                ticketAutoCloseTimer = null;
+            }
+            document.getElementById('ticketArea').style.display = 'none';
+            document.getElementById('formArea').style.display = 'flex';
             nums = { adults: 2, children: 0, infants: 0 };
             selectedSeat = 'どこでも';
-            document.getElementById('nameInput').value = '';
+            clearName();
             updateDisplays();
             selectSeat('どこでも');
         }
 
         socket.on('registered', g => {
             if (g.type === 'shop') {
-                document.getElementById('formArea').style.display='none';
-                document.getElementById('ticketArea').style.display='block';
+                document.getElementById('formArea').style.display = 'none';
+                document.getElementById('ticketArea').style.display = 'flex';
                 document.getElementById('num').innerText = g.displayId;
-                setTimeout(() => { closeTicket(); }, 3000);
+                if (ticketAutoCloseTimer) clearTimeout(ticketAutoCloseTimer);
+                ticketAutoCloseTimer = setTimeout(() => { closeTicket(); }, 3000);
             }
         });
 
-        socket.on('error', err => { alert('エラー: ' + err.message); });
+        socket.on('error', err => {
+            alert('エラー: ' + (err && err.message ? err.message : '不明なエラー'));
+        });
 
-        function playSound(type) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            if (type === 'call') {
-                oscillator.frequency.value = 880;
-                gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
-            } else if (type === 'arrival') {
-                oscillator.frequency.value = 800;
-                gainNode.gain.value = 0.3;
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.2);
+        function playSound(soundType) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const audioContext = new AudioCtx();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                if (soundType === 'call') {
+                    oscillator.frequency.value = 880;
+                    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                } else if (soundType === 'arrival') {
+                    oscillator.frequency.value = 800;
+                    gainNode.gain.value = 0.3;
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                }
+            } catch (e) {
+                console.warn('音声再生に失敗しました:', e);
             }
         }
+
+        // 初期化
+        buildKeyboards();
+        syncNameDisplay();
     </script>
 </body>
 </html>
