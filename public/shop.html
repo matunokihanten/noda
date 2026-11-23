@@ -28,10 +28,11 @@
         header {
             background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%);
             color: white;
-            padding: 8px 16px;
+            padding: 8px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             z-index: 10;
             flex-shrink: 0;
@@ -39,52 +40,123 @@
         .header-left {
             display: flex;
             align-items: baseline;
-            gap: 14px;
+            gap: 12px;
+            min-width: 0;
         }
         header h1 {
-            font-size: 1.45em;
+            font-size: 1.4em;
             font-weight: bold;
             line-height: 1.2;
+            white-space: nowrap;
         }
         header .info-text {
-            font-size: 0.9em;
+            font-size: 0.88em;
             opacity: 0.9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .btn-toggle-kb {
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .btn-header {
             background: rgba(255, 255, 255, 0.18);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.45);
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
-            font-size: 0.85em;
+            font-size: 0.82em;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.15s;
+            white-space: nowrap;
         }
-        .btn-toggle-kb:active {
+        .btn-header:active {
             background: rgba(255, 255, 255, 0.35);
         }
+        .btn-header.locked {
+            background: rgba(0, 0, 0, 0.35);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffd700;
+        }
 
-        /* メイン2分割レイアウト（左：キーボード / 右：本来の受付画面） */
+        /* メイン2分割レイアウト（CSS変数で左幅を制御） */
         .workspace {
+            --left-width: 50%;
             display: flex;
             flex: 1;
             overflow: hidden;
             width: 100%;
+            position: relative;
         }
 
-        /* ================= 左半分：キーボードパネル ================= */
+        /* ================= 左パネル：キーボード ================= */
         .keyboard-pane {
-            width: 50%;
+            width: var(--left-width);
+            flex-shrink: 0;
             background: #f0f2f5;
-            border-right: 4px solid #8b0000;
             display: flex;
             flex-direction: column;
             padding: 10px 12px;
             gap: 8px;
             overflow: hidden;
         }
-        .workspace.kb-hidden .keyboard-pane {
+        .workspace.kb-hidden .keyboard-pane,
+        .workspace.kb-hidden .pane-resizer {
+            display: none;
+        }
+
+        /* ================= 中央：横幅調整リサイザー ================= */
+        .pane-resizer {
+            width: 14px;
+            flex-shrink: 0;
+            background: #8b0000;
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            touch-action: none; /* タッチドラッグ中のスクロール暴発を防止 */
+            transition: background 0.15s;
+            z-index: 5;
+        }
+        .pane-resizer::after {
+            content: '';
+            width: 4px;
+            height: 44px;
+            border-left: 1.5px solid rgba(255, 255, 255, 0.75);
+            border-right: 1.5px solid rgba(255, 255, 255, 0.75);
+            border-radius: 2px;
+        }
+        .pane-resizer.dragging {
+            background: #d35400;
+        }
+        .pane-resizer.locked {
+            width: 4px;
+            cursor: default;
+            pointer-events: none;
+        }
+        .pane-resizer.locked::after {
+            display: none;
+        }
+
+        /* ドラッグ中に現在の比率を表示するバッジ */
+        .resize-badge {
+            position: fixed;
+            top: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
             display: none;
         }
 
@@ -94,9 +166,10 @@
             justify-content: space-between;
             gap: 8px;
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
         .kb-title {
-            font-size: 0.95em;
+            font-size: 0.92em;
             font-weight: bold;
             color: #8b0000;
             white-space: nowrap;
@@ -111,9 +184,9 @@
         .kb-mode-btn {
             border: none;
             background: transparent;
-            padding: 7px 14px;
+            padding: 6px 12px;
             border-radius: 8px;
-            font-size: 0.9em;
+            font-size: 0.86em;
             font-weight: bold;
             color: #444;
             cursor: pointer;
@@ -131,7 +204,7 @@
             border: 2px solid #8b0000;
             border-radius: 10px;
             padding: 8px 12px;
-            min-height: 48px;
+            min-height: 46px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -139,7 +212,7 @@
             box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.08);
         }
         .kb-preview-text {
-            font-size: 1.45em;
+            font-size: 1.4em;
             font-weight: bold;
             color: #222;
             overflow: hidden;
@@ -150,7 +223,7 @@
         }
         .kb-preview-placeholder {
             color: #aaa;
-            font-size: 0.8em;
+            font-size: 0.78em;
             font-weight: normal;
         }
         .kb-romaji-pending {
@@ -170,7 +243,7 @@
             50% { opacity: 0; }
         }
         .kb-char-count {
-            font-size: 0.8em;
+            font-size: 0.78em;
             color: #777;
             margin-left: 8px;
             flex-shrink: 0;
@@ -185,13 +258,13 @@
             min-height: 0;
         }
 
-        /* ひらがな五十音グリッド（右から左：あ〜わ の10列×5行） */
+        /* ひらがな五十音グリッド（10列×5行） */
         .hiragana-grid {
             flex: 1;
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             grid-template-rows: repeat(5, 1fr);
-            gap: 5px;
+            gap: 4px;
             min-height: 0;
         }
 
@@ -207,23 +280,23 @@
         .romaji-row {
             display: flex;
             justify-content: center;
-            gap: 5px;
+            gap: 4px;
             flex: 1;
             max-height: 76px;
         }
         .romaji-row .kb-key {
             flex: 1;
             max-width: 11%;
-            font-size: 1.35em;
+            font-size: clamp(0.95em, 1.8vw, 1.35em);
         }
 
-        /* 共通キーデザイン */
+        /* 共通キーデザイン（幅変更に合わせて文字サイズも自動追従） */
         .kb-key {
             background: #ffffff;
             border: 1px solid #c5ccd6;
             border-bottom: 3px solid #aab3c0;
             border-radius: 8px;
-            font-size: 1.25em;
+            font-size: clamp(0.9em, 1.6vw, 1.25em);
             font-weight: bold;
             color: #222;
             cursor: pointer;
@@ -232,6 +305,7 @@
             justify-content: center;
             transition: transform 0.05s, background 0.1s;
             touch-action: manipulation;
+            min-width: 0;
         }
         .kb-key:active {
             transform: translateY(2px);
@@ -247,8 +321,8 @@
         .kb-action-row {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 6px;
-            height: 54px;
+            gap: 5px;
+            height: 52px;
             flex-shrink: 0;
         }
         .kb-action-row.romaji-actions {
@@ -259,46 +333,47 @@
             border-color: #e6c291;
             border-bottom-color: #d4a359;
             color: #8a4b08;
-            font-size: 1.05em;
+            font-size: clamp(0.72em, 1.1vw, 0.98em);
         }
         .kb-key-bs {
             background: #fdecea;
             border-color: #f5c2c0;
             border-bottom-color: #e08b88;
             color: #b71c1c;
-            font-size: 0.95em;
+            font-size: clamp(0.72em, 1.1vw, 0.92em);
         }
         .kb-key-clear {
             background: #eceff1;
             border-color: #cfd8dc;
             border-bottom-color: #90a4ae;
             color: #455a64;
-            font-size: 0.95em;
+            font-size: clamp(0.72em, 1.1vw, 0.92em);
         }
         .kb-key-space {
             background: #e8f4fd;
             border-color: #b3d7f5;
             border-bottom-color: #7ab6e8;
             color: #0d47a1;
-            font-size: 0.95em;
+            font-size: clamp(0.72em, 1.1vw, 0.92em);
         }
 
         .kb-hint {
-            font-size: 0.78em;
+            font-size: 0.76em;
             color: #555;
             text-align: center;
             flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* ================= 右半分：本来の店舗受付画面 ================= */
+        /* ================= 右パネル：本来の店舗受付画面 ================= */
         .original-pane {
-            width: 50%;
+            flex: 1;
+            min-width: 0;
             display: flex;
             overflow: hidden;
             background: rgba(255, 255, 255, 0.95);
-        }
-        .workspace.kb-hidden .original-pane {
-            width: 100%;
         }
 
         /* 本来の左パネル（受付フォーム） */
@@ -420,7 +495,7 @@
             border: 2px solid #d4b483;
             padding: 8px 4px;
             border-radius: 8px;
-            font-size: 0.88em;
+            font-size: 0.86em;
             cursor: pointer;
             font-weight: 600;
             text-align: center;
@@ -444,7 +519,7 @@
             border: none;
             padding: 12px 8px;
             width: 100%;
-            font-size: 1.05em;
+            font-size: 1.02em;
             border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
@@ -464,6 +539,7 @@
         .queue-panel {
             width: 45%;
             flex: 1;
+            min-width: 0;
             padding: 10px;
             overflow-y: auto;
             background: #fafafa;
@@ -479,7 +555,7 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
         .total-label {
-            font-size: 0.88em;
+            font-size: 0.86em;
             color: #666;
             font-weight: bold;
             display: block;
@@ -491,7 +567,7 @@
             margin: 0 4px;
         }
         .total-unit {
-            font-size: 0.95em;
+            font-size: 0.92em;
             color: #666;
         }
 
@@ -500,7 +576,7 @@
         }
         .queue-section h3 {
             color: #8b0000;
-            font-size: 0.98em;
+            font-size: 0.95em;
             margin-bottom: 6px;
             padding-bottom: 4px;
             border-bottom: 2px solid #8b0000;
@@ -513,7 +589,7 @@
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
             gap: 8px;
         }
         .queue-card {
@@ -616,11 +692,17 @@
             <h1>🏮 松乃木飯店</h1>
             <div class="info-text">順番に、ご案内いたします。</div>
         </div>
-        <button type="button" id="toggleKbBtn" class="btn-toggle-kb" onclick="toggleKeyboardPane()">⌨️ キーボードを隠す</button>
+        <div class="header-controls">
+            <button type="button" id="resetWidthBtn" class="btn-header" onclick="resetPaneWidth()" title="左右を50:50に戻す">↔ 50:50</button>
+            <button type="button" id="lockWidthBtn" class="btn-header" onclick="toggleWidthLock()">🔓 幅変更可</button>
+            <button type="button" id="toggleKbBtn" class="btn-header" onclick="toggleKeyboardPane()">⌨️ キーボードを隠す</button>
+        </div>
     </header>
 
+    <div id="resizeBadge" class="resize-badge">左 50% : 右 50%</div>
+
     <div id="workspace" class="workspace">
-        <!-- ================= 左半分：名前入力用キーボード ================= -->
+        <!-- ================= 左パネル：名前入力用キーボード ================= -->
         <section class="keyboard-pane" aria-label="お名前入力キーボード">
             <div class="kb-top-bar">
                 <div class="kb-title">⌨️ お名前入力（省略可）</div>
@@ -632,7 +714,7 @@
 
             <div class="kb-preview-box">
                 <div id="kbPreviewText" class="kb-preview-text">
-                    <span class="kb-preview-placeholder">左のキーボードでお名前を入力できます（省略可）</span>
+                    <span class="kb-preview-placeholder">お名前を入力できます（省略可）</span>
                 </div>
                 <span id="kbCharCount" class="kb-char-count">0 / 20</span>
             </div>
@@ -645,10 +727,10 @@
                     <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('handakuten')">゜(半濁)</button>
                     <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('small')">小 (ゃゅょっ)</button>
                     <button type="button" class="kb-key kb-key-space" onclick="inputDirectChar(' ')">スペース</button>
-                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字消す</button>
+                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字</button>
                     <button type="button" class="kb-key kb-key-clear" onclick="clearName()">全消去</button>
                 </div>
-                <div class="kb-hint">文字を押した後に「゛」「゜」「小」を押すと変換できます（名前なしでも右から受付可能です）</div>
+                <div class="kb-hint">文字を押した後に「゛」「゜」「小」で変換できます（名前なしでも右から受付可）</div>
             </div>
 
             <!-- ローマ字モード -->
@@ -657,14 +739,17 @@
                 <div class="kb-action-row romaji-actions">
                     <button type="button" class="kb-key kb-key-space" onclick="handleRomajiSpace()">スペース</button>
                     <button type="button" class="kb-key kb-key-mod" onclick="handleRomajiKey('-')">ー (伸ばす)</button>
-                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字消す</button>
+                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字</button>
                     <button type="button" class="kb-key kb-key-clear" onclick="clearName()">全消去</button>
                 </div>
-                <div class="kb-hint">例: yamada → やまだ / tanaka → たなか / sato- → さとー（「ん」は nn）</div>
+                <div class="kb-hint">例: yamada → やまだ / tanaka → たなか（「ん」は nn）</div>
             </div>
         </section>
 
-        <!-- ================= 右半分：本来の店舗受付画面 ================= -->
+        <!-- ================= 中央：ドラッグ用リサイザー ================= -->
+        <div id="paneResizer" class="pane-resizer" role="separator" aria-orientation="vertical" aria-label="左右の横幅を調整"></div>
+
+        <!-- ================= 右パネル：本来の店舗受付画面 ================= -->
         <section class="original-pane">
             <!-- 受付フォーム -->
             <div class="form-panel">
@@ -773,6 +858,14 @@
         const type = 'shop';
         const MAX_NAME_LENGTH = 20;
 
+        // 横幅リサイズ設定
+        const STORAGE_KEY_WIDTH = 'shop_left_pane_width_pct';
+        const STORAGE_KEY_LOCK = 'shop_left_pane_locked';
+        const MIN_LEFT_PCT = 25;
+        const MAX_LEFT_PCT = 70;
+        let isWidthLocked = false;
+        let isDraggingResizer = false;
+
         let nums = { adults: 2, children: 0, infants: 0 };
         let isAccepting = true;
         let selectedSeat = 'どこでも';
@@ -780,11 +873,11 @@
         let ticketAutoCloseTimer = null;
 
         // キーボード状態
-        let currentKbMode = 'hiragana'; // 'hiragana' | 'romaji'
+        let currentKbMode = 'hiragana';
         let committedName = '';
         let romajiBuffer = '';
 
-        // 五十音テーブル（日本の受付機標準：右端が「あ行」、左端が「わ行」）
+        // 五十音テーブル（右端：あ行 〜 左端：わ行）
         const HIRAGANA_COLUMNS = [
             ['わ', 'を', 'ん', 'ー', ''],
             ['ら', 'り', 'る', 'れ', 'ろ'],
@@ -798,7 +891,6 @@
             ['あ', 'い', 'う', 'え', 'お']
         ];
 
-        // 濁点・半濁点・小文字の双方向変換マップ
         const DAKUTEN_MAP = {
             'か':'が', 'き':'ぎ', 'く':'ぐ', 'け':'げ', 'こ':'ご',
             'さ':'ざ', 'し':'じ', 'す':'ず', 'せ':'ぜ', 'そ':'ぞ',
@@ -826,14 +918,12 @@
             'ゃ':'や', 'ゅ':'ゆ', 'ょ':'よ', 'っ':'つ', 'ゎ':'わ'
         };
 
-        // QWERTY配列
         const ROMAJI_ROWS = [
             ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
             ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
             ['z', 'x', 'c', 'v', 'b', 'n', 'm']
         ];
 
-        // ローマ字→ひらがな変換テーブル（ヘボン式・訓令式・拗音・小文字対応）
         const ROMAJI_TABLE = {
             'a':'あ', 'i':'い', 'u':'う', 'e':'え', 'o':'お',
             'ka':'か', 'ki':'き', 'ku':'く', 'ke':'け', 'ko':'こ',
@@ -882,10 +972,118 @@
         const ROMAJI_KEYS = Object.keys(ROMAJI_TABLE);
 
         // ============================================================
-        // 2. キーボードUI生成・操作ロジック
+        // 2. 左右横幅リサイズ制御（Pointer Events + 永続化 + ロック）
+        // ============================================================
+        function applyLeftWidth(pct, save = true) {
+            const clamped = Math.min(MAX_LEFT_PCT, Math.max(MIN_LEFT_PCT, Math.round(pct)));
+            document.getElementById('workspace').style.setProperty('--left-width', `${clamped}%`);
+            if (save) {
+                try {
+                    localStorage.setItem(STORAGE_KEY_WIDTH, String(clamped));
+                } catch (e) {
+                    console.warn('横幅の保存に失敗:', e);
+                }
+            }
+            return clamped;
+        }
+
+        function resetPaneWidth() {
+            applyLeftWidth(50, true);
+            showResizeBadge(50, 900);
+        }
+
+        function updateWidthLockUI() {
+            const btn = document.getElementById('lockWidthBtn');
+            const resizer = document.getElementById('paneResizer');
+            btn.textContent = isWidthLocked ? '🔒 幅固定中' : '🔓 幅変更可';
+            btn.classList.toggle('locked', isWidthLocked);
+            resizer.classList.toggle('locked', isWidthLocked);
+        }
+
+        function toggleWidthLock() {
+            isWidthLocked = !isWidthLocked;
+            try {
+                localStorage.setItem(STORAGE_KEY_LOCK, String(isWidthLocked));
+            } catch (e) {
+                console.warn('ロック状態の保存に失敗:', e);
+            }
+            updateWidthLockUI();
+        }
+
+        let badgeHideTimer = null;
+        function showResizeBadge(leftPct, autoHideMs = 0) {
+            const badge = document.getElementById('resizeBadge');
+            badge.textContent = `左 ${leftPct}% : 右 ${100 - leftPct}%`;
+            badge.style.display = 'block';
+            if (badgeHideTimer) clearTimeout(badgeHideTimer);
+            if (autoHideMs > 0) {
+                badgeHideTimer = setTimeout(() => {
+                    badge.style.display = 'none';
+                }, autoHideMs);
+            }
+        }
+
+        function hideResizeBadge() {
+            const badge = document.getElementById('resizeBadge');
+            badge.style.display = 'none';
+        }
+
+        function initResizer() {
+            const workspace = document.getElementById('workspace');
+            const resizer = document.getElementById('paneResizer');
+
+            // 保存済み設定の復元
+            try {
+                const savedPct = parseFloat(localStorage.getItem(STORAGE_KEY_WIDTH));
+                if (!Number.isNaN(savedPct)) {
+                    applyLeftWidth(savedPct, false);
+                }
+                isWidthLocked = localStorage.getItem(STORAGE_KEY_LOCK) === 'true';
+            } catch (e) {
+                console.warn('設定の読み込みに失敗:', e);
+            }
+            updateWidthLockUI();
+
+            resizer.addEventListener('pointerdown', (e) => {
+                if (isWidthLocked) return;
+                isDraggingResizer = true;
+                resizer.classList.add('dragging');
+                resizer.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            });
+
+            resizer.addEventListener('pointermove', (e) => {
+                if (!isDraggingResizer || isWidthLocked) return;
+                const rect = workspace.getBoundingClientRect();
+                if (rect.width <= 0) return;
+                const rawPct = ((e.clientX - rect.left) / rect.width) * 100;
+                const applied = applyLeftWidth(rawPct, false);
+                showResizeBadge(applied, 0);
+            });
+
+            const finishDrag = (e) => {
+                if (!isDraggingResizer) return;
+                isDraggingResizer = false;
+                resizer.classList.remove('dragging');
+                if (resizer.hasPointerCapture(e.pointerId)) {
+                    resizer.releasePointerCapture(e.pointerId);
+                }
+                const rect = workspace.getBoundingClientRect();
+                if (rect.width > 0) {
+                    const rawPct = ((e.clientX - rect.left) / rect.width) * 100;
+                    applyLeftWidth(rawPct, true);
+                }
+                hideResizeBadge();
+            };
+
+            resizer.addEventListener('pointerup', finishDrag);
+            resizer.addEventListener('pointercancel', finishDrag);
+        }
+
+        // ============================================================
+        // 3. キーボードUI生成・操作ロジック
         // ============================================================
         function buildKeyboards() {
-            // ひらがなグリッド生成（5行×10列）
             const hGrid = document.getElementById('hiraganaGrid');
             hGrid.innerHTML = '';
             for (let row = 0; row < 5; row++) {
@@ -905,7 +1103,6 @@
                 }
             }
 
-            // ローマ字QWERTY生成
             const rLayout = document.getElementById('romajiLayout');
             rLayout.innerHTML = '';
             ROMAJI_ROWS.forEach(rowKeys => {
@@ -971,7 +1168,6 @@
         function handleRomajiKey(key) {
             if (committedName.length >= MAX_NAME_LENGTH) return;
 
-            // 長音キー処理
             if (key === '-') {
                 flushPendingRomaji();
                 appendCommitted('ー');
@@ -981,14 +1177,12 @@
 
             romajiBuffer += key.toLowerCase();
 
-            // バッファを順次確定処理
             while (romajiBuffer.length > 0) {
                 if (committedName.length >= MAX_NAME_LENGTH) {
                     romajiBuffer = '';
                     break;
                 }
 
-                // 1. 促音判定（同じ子音が2連続、ただし n と母音は除く）
                 if (
                     romajiBuffer.length >= 2 &&
                     romajiBuffer[0] === romajiBuffer[1] &&
@@ -999,7 +1193,6 @@
                     continue;
                 }
 
-                // 2. 単独の「n」＋後続文字（母音・y・n以外）→「ん」として確定
                 if (
                     romajiBuffer.length >= 2 &&
                     romajiBuffer[0] === 'n' &&
@@ -1010,22 +1203,15 @@
                     continue;
                 }
 
-                // 3. 完全一致チェック
                 if (Object.prototype.hasOwnProperty.call(ROMAJI_TABLE, romajiBuffer)) {
                     appendCommitted(ROMAJI_TABLE[romajiBuffer]);
                     romajiBuffer = '';
                     break;
                 }
 
-                // 4. 前方一致する候補があるかチェック
                 const hasPrefix = ROMAJI_KEYS.some(k => k.startsWith(romajiBuffer));
-                if (hasPrefix) {
-                    // 次の文字入力を待つ
-                    break;
-                }
+                if (hasPrefix) break;
 
-                // 5. 一致候補がない場合（例: "kt" のような無効な組み合わせ）
-                // 先頭1文字を破棄して残りを再評価し、入力詰まりを防ぐ
                 romajiBuffer = romajiBuffer.slice(1);
             }
 
@@ -1064,11 +1250,9 @@
             const previewEl = document.getElementById('kbPreviewText');
             const countEl = document.getElementById('kbCharCount');
 
-            // フォーム側の入力欄へ同期
             nameInput.value = committedName + romajiBuffer;
             countEl.textContent = `${committedName.length} / ${MAX_NAME_LENGTH}`;
 
-            // キーボード側のリッチプレビュー更新（XSS安全なDOM生成）
             previewEl.innerHTML = '';
             if (!committedName && !romajiBuffer) {
                 const ph = document.createElement('span');
@@ -1092,7 +1276,7 @@
         }
 
         // ============================================================
-        // 3. 受付フォーム・待ち状況管理（既存機能＋XSS対策）
+        // 4. 受付フォーム・待ち状況管理
         // ============================================================
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -1272,7 +1456,6 @@
                 alert('大人の人数は1名以上必要です。');
                 return;
             }
-            // 未確定のローマ字（末尾の 'n' 等）を確定してから送信（空欄でもそのまま送信可能）
             flushPendingRomaji();
             syncNameDisplay();
             const name = committedName.trim();
@@ -1334,6 +1517,7 @@
         }
 
         // 初期化
+        initResizer();
         buildKeyboards();
         syncNameDisplay();
     </script>
