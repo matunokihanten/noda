@@ -34,7 +34,7 @@ let completedHistory = [];
 let printerEnabled = true;
 let isAccepting = true;
 let waitTimeDisplayEnabled = false;
-let blockedSeats = []; // ★ 追加: ブロックされている座席を保持する配列
+let blockedSeats = [];
 
 let waitTimes = []; 
 let acceptanceTimer = null; 
@@ -53,12 +53,11 @@ if (fs.existsSync(DATA_FILE)) {
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
         isAccepting = data.isAccepting !== undefined ? data.isAccepting : true;
         waitTimeDisplayEnabled = data.waitTimeDisplayEnabled !== undefined ? data.waitTimeDisplayEnabled : false;
-        blockedSeats = data.blockedSeats || []; // ★ 追加: JSONからの読み込み
+        blockedSeats = data.blockedSeats || [];
     } catch (e) { console.error("データ読込エラー:", e); }
 }
 
 function saveData() {
-    // ★ 追加: blockedSeats を保存データに含める
     const data = { queue, nextNumber, stats, printerEnabled, isAccepting, waitTimeDisplayEnabled, completedHistory, blockedSeats };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
@@ -86,7 +85,7 @@ async function sendEmailBackup(subject, text) {
     }
 }
 
-// 🖨 プリンター制御
+// 🖨 プリンター制御（お名前が入力されている場合のみ印字）
 function printTicket(guest) {
     if (!printerEnabled) return;
     try {
@@ -96,7 +95,9 @@ function printTicket(guest) {
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
         const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-        const footerText = `日時：${nowJst}\n人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
+        const trimmedName = (guest.name || '').trim();
+        const nameLine = trimmedName ? `お名前：${trimmedName} 様\n` : '';
+        const footerText = `${nameLine}日時：${nowJst}\n人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
         const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
         fs.writeFileSync(PRINT_JOB_FILE, Buffer.concat([initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd]));
@@ -116,10 +117,8 @@ app.delete('/cloudprnt', (req, res) => { if (fs.existsSync(PRINT_JOB_FILE)) fs.u
 
 // 💬 Socket.io 通信
 io.on('connection', (socket) => {
-    // ★ 追加: 接続時の init に blockedSeats を含める
     socket.emit('init', { isAccepting, queue, stats, printerEnabled, waitTimeDisplayEnabled, completedHistory, blockedSeats });
 
-    // ★ 追加: 座席ブロック設定の受信と全体への配信
     socket.on('toggleSeatBlock', (data) => {
         if (data.blocked) {
             if (!blockedSeats.includes(data.seat)) {
@@ -128,8 +127,8 @@ io.on('connection', (socket) => {
         } else {
             blockedSeats = blockedSeats.filter(s => s !== data.seat);
         }
-        saveData(); // ファイルに保存して次回起動時も維持する
-        io.emit('seatBlockChanged', { blockedSeats }); // 全端末へ変更を通知
+        saveData();
+        io.emit('seatBlockChanged', { blockedSeats });
     });
 
     socket.on('register', async (data) => {
