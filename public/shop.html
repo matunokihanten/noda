@@ -669,7 +669,6 @@
         .queue-card:active {
             transform: scale(0.97);
         }
-        /* 到着済みカードは控えめにして未到着を目立たせる */
         .queue-card.arrived {
             border-color: #8bc34a;
             background: linear-gradient(135deg, #eef7ee 0%, #e1f0e1 100%);
@@ -820,6 +819,7 @@
             <div class="info-text">順番に、ご案内いたします。</div>
         </div>
         <div class="header-controls">
+            <button type="button" id="voiceCallBtn" class="btn-header" onclick="toggleShopVoice()">🔊 呼出音声: ON</button>
             <button type="button" id="resetWidthBtn" class="btn-header" onclick="resetPaneWidth()" title="左右を35:65に戻す">↔ 35:65</button>
             <button type="button" id="lockWidthBtn" class="btn-header" onclick="toggleWidthLock()">🔓 幅変更可</button>
             <button type="button" id="toggleKbBtn" class="btn-header" onclick="toggleKeyboardPane()">⌨️ キーボードを隠す</button>
@@ -1044,11 +1044,13 @@
         // 横幅リサイズ設定（デフォルト35%）
         const STORAGE_KEY_WIDTH = 'shop_left_pane_width_pct_v2';
         const STORAGE_KEY_LOCK = 'shop_left_pane_locked';
+        const STORAGE_KEY_SHOP_VOICE = 'shop_call_voice_enabled';
         const DEFAULT_LEFT_PCT = 35;
         const MIN_LEFT_PCT = 25;
         const MAX_LEFT_PCT = 70;
         let isWidthLocked = false;
         let isDraggingResizer = false;
+        let shopVoiceEnabled = true;
 
         let nums = { adults: 2, children: 0, infants: 0 };
         let isAccepting = true;
@@ -1162,7 +1164,72 @@
         const ROMAJI_KEYS = Object.keys(ROMAJI_TABLE);
 
         // ============================================================
-        // 2. 無操作60秒自動リセット
+        // 2. 店舗画面からの呼び出し音声読み上げ機能
+        // ============================================================
+        function initShopVoice() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY_SHOP_VOICE);
+                shopVoiceEnabled = saved !== 'false';
+            } catch (e) {
+                shopVoiceEnabled = true;
+            }
+            updateShopVoiceUI();
+        }
+
+        function updateShopVoiceUI() {
+            const btn = document.getElementById('voiceCallBtn');
+            if (!btn) return;
+            btn.textContent = shopVoiceEnabled ? '🔊 呼出音声: ON' : '🔇 呼出音声: OFF';
+            btn.classList.toggle('locked', !shopVoiceEnabled);
+        }
+
+        function toggleShopVoice() {
+            shopVoiceEnabled = !shopVoiceEnabled;
+            try {
+                localStorage.setItem(STORAGE_KEY_SHOP_VOICE, String(shopVoiceEnabled));
+            } catch (e) {}
+            updateShopVoiceUI();
+
+            if (shopVoiceEnabled) {
+                speakShopCall({ displayId: '', name: '', isTest: true });
+            } else if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function speakShopCall(data) {
+            if (!shopVoiceEnabled || !window.speechSynthesis) return;
+
+            try {
+                window.speechSynthesis.cancel();
+
+                let message = '';
+                if (data && data.isTest) {
+                    message = '呼び出し音声をオンにしました。';
+                } else {
+                    const rawId = data && data.displayId ? String(data.displayId) : '';
+                    const formattedId = rawId ? rawId.replace('-', 'の') + '番' : '';
+                    const namePart = data && data.name ? `、${data.name}様` : 'のお客様';
+                    message = `${formattedId}${namePart}、お待たせいたしました。お席の準備ができましたので、スタッフまでお声がけください。`;
+                }
+
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = 'ja-JP';
+                utterance.rate = 0.92;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+
+                const delayMs = data && data.isTest ? 0 : 600;
+                setTimeout(() => {
+                    window.speechSynthesis.speak(utterance);
+                }, delayMs);
+            } catch (e) {
+                console.warn('音声読み上げに失敗しました:', e);
+            }
+        }
+
+        // ============================================================
+        // 3. 無操作60秒自動リセット
         // ============================================================
         function isFormDirty() {
             return (
@@ -1196,7 +1263,7 @@
         document.addEventListener('pointerdown', resetIdleTimer, { passive: true });
 
         // ============================================================
-        // 3. 左右横幅リサイズ制御（初期35%・ドラッグ調整・ロック）
+        // 4. 左右横幅リサイズ制御（初期35%・ドラッグ調整・ロック）
         // ============================================================
         function applyLeftWidth(pct, save = true) {
             const clamped = Math.min(MAX_LEFT_PCT, Math.max(MIN_LEFT_PCT, Math.round(pct)));
@@ -1305,7 +1372,7 @@
         }
 
         // ============================================================
-        // 4. キーボードUI生成・操作ロジック
+        // 5. キーボードUI生成・操作ロジック
         // ============================================================
         function buildKeyboards() {
             const hGrid = document.getElementById('hiraganaGrid');
@@ -1500,7 +1567,7 @@
         }
 
         // ============================================================
-        // 5. 受付フォーム・待ち状況管理・専用到着モーダル
+        // 6. 受付フォーム・待ち状況管理・専用到着モーダル
         // ============================================================
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -1573,7 +1640,6 @@
             });
         }
 
-        // 専用 到着確認モーダル制御
         function openArrivalModal(displayId, guestName, alreadyArrived) {
             if (alreadyArrived) return;
             pendingArrivalId = displayId;
@@ -1615,7 +1681,6 @@
             document.getElementById('totalWaitCount').innerText = queue.length;
             updateSeatWaitCounts(queue);
 
-            // 未到着を先頭、到着済みを後方にソート
             const webQueue = queue
                 .filter(g => g.type === 'web')
                 .sort((a, b) => Number(Boolean(a.arrived)) - Number(Boolean(b.arrived)));
@@ -1697,7 +1762,13 @@
         });
 
         socket.on('guestArrived', () => playSound('arrival'));
-        socket.on('guestCalled', () => playSound('call'));
+
+        // ★ 管理画面からの呼び出し受信時にチャイム音＋音声読み上げ
+        socket.on('guestCalled', (data) => {
+            playSound('call');
+            speakShopCall(data);
+        });
+
         socket.on('dailyReset', () => {
             location.reload();
         });
@@ -1728,11 +1799,9 @@
             if (!isAccepting || isSubmitting) return;
             if (nums.adults < 1) return;
 
-            // 二重発券ブロック
             isSubmitting = true;
             updateAcceptanceUI();
 
-            // 通信断などで応答がない場合のフェイルセーフ（10秒）
             submitFailSafeTimer = setTimeout(() => {
                 releaseSubmitLock();
             }, SUBMIT_TIMEOUT_MS);
@@ -1779,7 +1848,7 @@
                 const now = audioContext.currentTime;
 
                 if (soundType === 'registered') {
-                    // 発券完了音「ピロン♪」（2音階）
+                    // 発券完了音「ピロン♪」
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
                     osc.type = 'sine';
@@ -1792,15 +1861,18 @@
                     osc.start(now);
                     osc.stop(now + 0.4);
                 } else if (soundType === 'call') {
+                    // 呼び出しチャイム音「ピンポーン♪」（高音→低音）
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
+                    osc.type = 'sine';
                     osc.connect(gain);
                     gain.connect(audioContext.destination);
-                    osc.frequency.value = 880;
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.18);
                     gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
                     osc.start(now);
-                    osc.stop(now + 0.5);
+                    osc.stop(now + 0.6);
                 } else if (soundType === 'arrival') {
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
@@ -1817,6 +1889,7 @@
         }
 
         // 初期化
+        initShopVoice();
         initResizer();
         buildKeyboards();
         updateDisplays();
