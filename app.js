@@ -30,15 +30,15 @@ const PRINT_JOB_FILE = path.join(__dirname, 'print_job.bin');
 let queue = [];
 let nextNumber = 1;
 let stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
-let completedHistory = []; 
+let completedHistory = [];
 let printerEnabled = true;
 let isAccepting = true;
 let waitTimeDisplayEnabled = false;
 let blockedSeats = [];
 
-let waitTimes = []; 
-let acceptanceTimer = null; 
-let absentTimers = {}; 
+let waitTimes = [];
+let acceptanceTimer = null;
+let absentTimers = {};
 
 // 💾 データの読み込み
 if (fs.existsSync(DATA_FILE)) {
@@ -47,7 +47,7 @@ if (fs.existsSync(DATA_FILE)) {
         queue = data.queue || [];
         nextNumber = data.nextNumber || 1;
         stats = data.stats || stats;
-        completedHistory = data.completedHistory || []; 
+        completedHistory = data.completedHistory || [];
         if (stats.totalWebToday === undefined) stats.totalWebToday = 0;
         if (stats.totalShopToday === undefined) stats.totalShopToday = 0;
         printerEnabled = data.printerEnabled !== undefined ? data.printerEnabled : true;
@@ -66,7 +66,7 @@ function saveData() {
 async function sendLineNotification(messageText) {
     if (!LINE_ACCESS_TOKEN) return;
     try {
-        await axios.post('https://api.line.me/v2/bot/message/broadcast', 
+        await axios.post('https://api.line.me/v2/bot/message/broadcast',
         { messages: [{ type: 'text', text: messageText }] },
         { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_ACCESS_TOKEN}` } }
         );
@@ -89,17 +89,17 @@ async function sendEmailBackup(subject, text) {
 function printTicket(guest) {
     if (!printerEnabled) return;
     try {
-        const initCmd = Buffer.from([0x1b, 0x40]); 
+        const initCmd = Buffer.from([0x1b, 0x40]);
         const headerBuf = iconv.encode("      松乃木飯店\n--------------------------\n受付番号：\n", "Shift_JIS");
-        const expandCmd = Buffer.from([0x1b, 0x69, 0x01, 0x01]); 
+        const expandCmd = Buffer.from([0x1b, 0x69, 0x01, 0x01]);
         const ticketBuf = iconv.encode(guest.displayId + "\n", "Shift_JIS");
-        const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]); 
+        const normalCmd = Buffer.from([0x1b, 0x69, 0x00, 0x00]);
         const nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
         const trimmedName = (guest.name || '').trim();
         const nameLine = trimmedName ? `お名前：${trimmedName} 様\n` : '';
         const footerText = `${nameLine}日時：${nowJst}\n人数：大人${guest.adults}/子供${guest.children}/幼児${guest.infants}\n座席：${guest.pref}\n--------------------------\nご来店ありがとうございます\n\n\n\n`;
         const footerBuf = iconv.encode(footerText, "Shift_JIS");
-        const cutCmd = Buffer.from([0x1b, 0x64, 0x02]); 
+        const cutCmd = Buffer.from([0x1b, 0x64, 0x02]);
         fs.writeFileSync(PRINT_JOB_FILE, Buffer.concat([initCmd, headerBuf, expandCmd, ticketBuf, normalCmd, footerBuf, cutCmd]));
     } catch (e) { console.error("印刷エラー:", e); }
 }
@@ -109,7 +109,7 @@ app.post('/cloudprnt', (req, res) => res.json({ jobReady: fs.existsSync(PRINT_JO
 app.get('/cloudprnt', (req, res) => {
     if (fs.existsSync(PRINT_JOB_FILE)) {
         const content = fs.readFileSync(PRINT_JOB_FILE);
-        res.set({'Content-Type': 'application/vnd.star.starprnt', 'Content-Length': content.length});
+        res.set({ 'Content-Type': 'application/vnd.star.starprnt', 'Content-Length': content.length });
         res.send(content);
     } else res.status(204).send();
 });
@@ -137,10 +137,10 @@ io.on('connection', (socket) => {
         const calcWait = stats.averageWaitTime > 0 ? stats.averageWaitTime : 5;
         const estimatedWait = queue.length * calcWait;
 
-        const newGuest = { 
-            displayId: `${prefix}-${nextNumber++}`, 
-            ...data, 
-            timestamp: Date.now(), 
+        const newGuest = {
+            displayId: `${prefix}-${nextNumber++}`,
+            ...data,
+            timestamp: Date.now(),
             time: new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' }),
             arrived: data.type === 'shop',
             called: false,
@@ -189,9 +189,10 @@ io.on('connection', (socket) => {
 
     socket.on('markArrived', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
-        if (guest) { 
-            guest.arrived = true; saveData(); 
-            io.emit('update', { queue, stats, completedHistory }); 
+        if (guest) {
+            guest.arrived = true;
+            saveData();
+            io.emit('update', { queue, stats, completedHistory });
             io.emit('guestArrived', { displayId: guest.displayId });
         }
     });
@@ -199,19 +200,19 @@ io.on('connection', (socket) => {
     socket.on('markAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.absent = true; 
-            saveData(); 
+            guest.absent = true;
+            saveData();
             io.emit('update', { queue, stats, completedHistory });
-            
+
             absentTimers[displayId] = setTimeout(() => {
                 const autoDeletedGuest = queue.find(g => g.displayId === displayId);
                 if (autoDeletedGuest) {
                     autoDeletedGuest.completedTime = new Date().toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo' });
-                    autoDeletedGuest.isAbsentDelete = true; 
+                    autoDeletedGuest.isAbsentDelete = true;
                     completedHistory.push(autoDeletedGuest);
-                    
+
                     queue = queue.filter(g => g.displayId !== displayId);
-                    saveData(); 
+                    saveData();
                     io.emit('update', { queue, stats, completedHistory });
                 }
                 delete absentTimers[displayId];
@@ -222,17 +223,28 @@ io.on('connection', (socket) => {
     socket.on('cancelAbsent', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.absent = false; saveData(); io.emit('update', { queue, stats, completedHistory });
+            guest.absent = false;
+            saveData();
+            io.emit('update', { queue, stats, completedHistory });
             if (absentTimers[displayId]) { clearTimeout(absentTimers[displayId]); delete absentTimers[displayId]; }
         }
     });
 
+    // ★ 呼び出し時にお名前・人数も含めて店舗画面へ配信
     socket.on('callGuest', ({ displayId }) => {
         const guest = queue.find(g => g.displayId === displayId);
         if (guest) {
-            guest.called = true; saveData();
+            guest.called = true;
+            saveData();
             io.emit('update', { queue, stats, completedHistory });
-            io.emit('guestCalled', { displayId: guest.displayId, type: guest.type });
+            io.emit('guestCalled', {
+                displayId: guest.displayId,
+                type: guest.type,
+                name: guest.name || '',
+                adults: guest.adults || 0,
+                children: guest.children || 0,
+                infants: guest.infants || 0
+            });
         }
     });
 
@@ -243,8 +255,10 @@ io.on('connection', (socket) => {
 
     socket.on('resetStats', () => {
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
-        completedHistory = []; 
-        waitTimes = []; saveData(); io.emit('update', { queue, stats, completedHistory });
+        completedHistory = [];
+        waitTimes = [];
+        saveData();
+        io.emit('update', { queue, stats, completedHistory });
     });
 
     socket.on('setAcceptance', ({ status, duration }) => {
@@ -255,7 +269,8 @@ io.on('connection', (socket) => {
                 isAccepting = true; saveData(); io.emit('statusChange', { isAccepting: true });
             }, duration * 60 * 1000);
         }
-        saveData(); io.emit('statusChange', { isAccepting });
+        saveData();
+        io.emit('statusChange', { isAccepting });
     });
 
     socket.on('setPrinterEnabled', ({ enabled }) => { printerEnabled = enabled; saveData(); io.emit('printerStatusChanged', { printerEnabled }); });
@@ -266,7 +281,7 @@ io.on('connection', (socket) => {
 setInterval(() => {
     const jstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     if (jstNow.getHours() === 0 && jstNow.getMinutes() === 0) {
-        queue = []; nextNumber = 1; completedHistory = []; 
+        queue = []; nextNumber = 1; completedHistory = [];
         stats = { totalToday: 0, completedToday: 0, averageWaitTime: 0, totalWebToday: 0, totalShopToday: 0 };
         waitTimes = []; saveData(); io.emit('dailyReset');
     }
