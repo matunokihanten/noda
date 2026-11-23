@@ -83,9 +83,9 @@
             color: #ffd700;
         }
 
-        /* メイン2分割レイアウト（CSS変数で左幅を制御） */
+        /* メイン2分割レイアウト（初期値：左35% / 右65%） */
         .workspace {
-            --left-width: 50%;
+            --left-width: 35%;
             display: flex;
             flex: 1;
             overflow: hidden;
@@ -100,8 +100,8 @@
             background: #f0f2f5;
             display: flex;
             flex-direction: column;
-            padding: 10px 12px;
-            gap: 8px;
+            padding: 8px 10px;
+            gap: 6px;
             overflow: hidden;
         }
         .workspace.kb-hidden .keyboard-pane,
@@ -119,7 +119,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            touch-action: none; /* タッチドラッグ中のスクロール暴発を防止 */
+            touch-action: none;
             transition: background 0.15s;
             z-index: 5;
         }
@@ -143,13 +143,12 @@
             display: none;
         }
 
-        /* ドラッグ中に現在の比率を表示するバッジ */
         .resize-badge {
             position: fixed;
             top: 56px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.82);
             color: #fff;
             padding: 6px 14px;
             border-radius: 20px;
@@ -164,12 +163,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
             flex-wrap: wrap;
         }
         .kb-title {
-            font-size: 0.92em;
+            font-size: 0.88em;
             font-weight: bold;
             color: #8b0000;
             white-space: nowrap;
@@ -177,16 +176,16 @@
         .kb-mode-switch {
             display: flex;
             background: #dce1e8;
-            border-radius: 10px;
-            padding: 3px;
-            gap: 4px;
+            border-radius: 8px;
+            padding: 2px;
+            gap: 3px;
         }
         .kb-mode-btn {
             border: none;
             background: transparent;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.86em;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
             font-weight: bold;
             color: #444;
             cursor: pointer;
@@ -195,16 +194,15 @@
         .kb-mode-btn.active {
             background: #8b0000;
             color: #fff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        /* キーボード側の名前プレビュー枠 */
         .kb-preview-box {
             background: #fff;
             border: 2px solid #8b0000;
             border-radius: 10px;
-            padding: 8px 12px;
-            min-height: 46px;
+            padding: 6px 10px;
+            min-height: 42px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -212,7 +210,7 @@
             box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.08);
         }
         .kb-preview-text {
-            font-size: 1.4em;
+            font-size: 1.25em;
             font-weight: bold;
             color: #222;
             overflow: hidden;
@@ -223,7 +221,7 @@
         }
         .kb-preview-placeholder {
             color: #aaa;
-            font-size: 0.78em;
+            font-size: 0.72em;
             font-weight: normal;
         }
         .kb-romaji-pending {
@@ -243,60 +241,56 @@
             50% { opacity: 0; }
         }
         .kb-char-count {
-            font-size: 0.78em;
+            font-size: 0.75em;
             color: #777;
-            margin-left: 8px;
+            margin-left: 6px;
             flex-shrink: 0;
         }
 
-        /* キーボード本体エリア */
         .kb-body {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             min-height: 0;
         }
 
-        /* ひらがな五十音グリッド（10列×5行） */
         .hiragana-grid {
             flex: 1;
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             grid-template-rows: repeat(5, 1fr);
-            gap: 4px;
+            gap: 3px;
             min-height: 0;
         }
 
-        /* ローマ字QWERTYレイアウト */
         .romaji-layout {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             min-height: 0;
         }
         .romaji-row {
             display: flex;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
             flex: 1;
-            max-height: 76px;
+            max-height: 70px;
         }
         .romaji-row .kb-key {
             flex: 1;
             max-width: 11%;
-            font-size: clamp(0.95em, 1.8vw, 1.35em);
+            font-size: clamp(0.85em, 1.5vw, 1.25em);
         }
 
-        /* 共通キーデザイン（幅変更に合わせて文字サイズも自動追従） */
         .kb-key {
             background: #ffffff;
             border: 1px solid #c5ccd6;
             border-bottom: 3px solid #aab3c0;
-            border-radius: 8px;
-            font-size: clamp(0.9em, 1.6vw, 1.25em);
+            border-radius: 6px;
+            font-size: clamp(0.82em, 1.35vw, 1.2em);
             font-weight: bold;
             color: #222;
             cursor: pointer;
@@ -317,48 +311,47 @@
             pointer-events: none;
         }
 
-        /* 下段ファンクションキー行 */
         .kb-action-row {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 5px;
-            height: 52px;
+            gap: 4px;
+            height: 48px;
             flex-shrink: 0;
         }
         .kb-action-row.romaji-actions {
-            grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr;
+            grid-template-columns: 1.1fr 1fr 1.1fr 1.1fr;
         }
         .kb-key-mod {
             background: #fff4e5;
             border-color: #e6c291;
             border-bottom-color: #d4a359;
             color: #8a4b08;
-            font-size: clamp(0.72em, 1.1vw, 0.98em);
+            font-size: clamp(0.68em, 0.95vw, 0.92em);
         }
         .kb-key-bs {
             background: #fdecea;
             border-color: #f5c2c0;
             border-bottom-color: #e08b88;
             color: #b71c1c;
-            font-size: clamp(0.72em, 1.1vw, 0.92em);
+            font-size: clamp(0.68em, 0.95vw, 0.88em);
         }
         .kb-key-clear {
             background: #eceff1;
             border-color: #cfd8dc;
             border-bottom-color: #90a4ae;
             color: #455a64;
-            font-size: clamp(0.72em, 1.1vw, 0.92em);
+            font-size: clamp(0.68em, 0.95vw, 0.88em);
         }
         .kb-key-space {
             background: #e8f4fd;
             border-color: #b3d7f5;
             border-bottom-color: #7ab6e8;
             color: #0d47a1;
-            font-size: clamp(0.72em, 1.1vw, 0.92em);
+            font-size: clamp(0.68em, 0.95vw, 0.88em);
         }
 
         .kb-hint {
-            font-size: 0.76em;
+            font-size: 0.72em;
             color: #555;
             text-align: center;
             flex-shrink: 0;
@@ -376,9 +369,9 @@
             background: rgba(255, 255, 255, 0.95);
         }
 
-        /* 本来の左パネル（受付フォーム） */
+        /* 受付フォーム */
         .form-panel {
-            width: 55%;
+            width: 54%;
             padding: 10px;
             background: white;
             border-right: 2px solid #8b0000;
@@ -387,7 +380,7 @@
             flex-direction: column;
         }
         .workspace.kb-hidden .form-panel {
-            width: 450px;
+            width: 460px;
             flex-shrink: 0;
         }
 
@@ -409,9 +402,9 @@
         }
 
         input[type="text"].name-field {
-            padding: 8px 10px;
+            padding: 7px 10px;
             width: 100%;
-            font-size: 1em;
+            font-size: 0.98em;
             font-weight: bold;
             color: #222;
             border: 2px solid #8b0000;
@@ -428,33 +421,37 @@
             padding: 5px 0;
             border-bottom: 1px solid #eee;
         }
-        .control-label {
-            font-size: 0.82em;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 3px;
-            display: block;
-        }
-        .control-row {
+        .control-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .control-label {
+            font-size: 0.84em;
+            font-weight: bold;
+            color: #333;
+        }
+        .inline-stepper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .num-display {
-            font-size: 1.45em;
+            font-size: 1.25em;
             font-weight: bold;
-            min-width: 36px;
+            min-width: 28px;
             text-align: center;
             color: #8b0000;
         }
         .btn-step {
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-            border: 2px solid #ccc;
-            width: 34px;
-            height: 34px;
+            border: 1.5px solid #ccc;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            font-size: 1.25em;
+            font-size: 1.1em;
+            font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -463,27 +460,40 @@
         .btn-step:active {
             transform: scale(0.92);
         }
+
+        /* ワンタップ人数ボタン群 */
         .quick-nums {
-            display: flex;
+            display: grid;
             gap: 4px;
-            margin-top: 5px;
-            justify-content: center;
-            flex-wrap: wrap;
+        }
+        .quick-nums.cols-6 {
+            grid-template-columns: repeat(6, 1fr);
+        }
+        .quick-nums.cols-4 {
+            grid-template-columns: repeat(4, 1fr);
         }
         .btn-quick {
             background: #fff;
             border: 1.5px solid #d4b483;
-            padding: 4px 8px;
+            padding: 6px 2px;
             border-radius: 6px;
-            font-size: 0.78em;
+            font-size: 0.82em;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.12s;
+        }
+        .btn-quick.active {
+            background: #8b0000;
+            color: #fff;
+            border-color: #8b0000;
+            box-shadow: 0 2px 4px rgba(139, 0, 0, 0.25);
         }
         .btn-quick:active {
-            background: #d4b483;
-            color: white;
+            transform: scale(0.96);
         }
 
+        /* 座席ボタン（待ち組数バッジ付き） */
         .seat-buttons {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -493,17 +503,35 @@
         .btn-seat {
             background: #fff;
             border: 2px solid #d4b483;
-            padding: 8px 4px;
+            padding: 7px 6px;
             border-radius: 8px;
             font-size: 0.86em;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: bold;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            color: #222;
+        }
+        .seat-wait-badge {
+            font-size: 0.78em;
+            font-weight: bold;
+            color: #8b0000;
+            background: #fdf2f2;
+            padding: 1px 7px;
+            border-radius: 10px;
         }
         .btn-seat.selected {
             background: #8b0000;
             color: white;
             border-color: #8b0000;
+        }
+        .btn-seat.selected .seat-wait-badge {
+            background: rgba(255, 255, 255, 0.22);
+            color: #fff;
         }
         .btn-seat:disabled {
             background: #e0e0e0 !important;
@@ -512,6 +540,10 @@
             cursor: not-allowed;
             text-decoration: line-through;
         }
+        .btn-seat:disabled .seat-wait-badge {
+            background: #d0d0d0;
+            color: #777;
+        }
 
         .btn-submit {
             background: linear-gradient(135deg, #8b0000 0%, #b91d1d 100%);
@@ -519,25 +551,58 @@
             border: none;
             padding: 12px 8px;
             width: 100%;
-            font-size: 1.02em;
+            font-size: 1.05em;
             border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
             box-shadow: 0 3px 8px rgba(139, 0, 0, 0.3);
             margin-top: 4px;
+            transition: opacity 0.15s;
         }
         .btn-submit:active {
             transform: translateY(1px);
         }
         .btn-submit:disabled {
-            background: #ccc;
+            background: #999;
             cursor: not-allowed;
             box-shadow: none;
+            opacity: 0.85;
         }
 
-        /* 本来の右パネル（待ち状況一覧） */
+        /* 受付完了エリア */
+        .complete-id {
+            font-size: 3.4em;
+            color: #8b0000;
+            font-weight: bold;
+            text-align: center;
+            margin: 8px 0;
+        }
+        .printer-guide {
+            background: #fff8e1;
+            border: 2px solid #ffb300;
+            color: #7a4f01;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.92em;
+            font-weight: bold;
+            line-height: 1.45;
+            margin: 6px 0 10px;
+        }
+        .stop-message {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        /* 待ち状況一覧 */
         .queue-panel {
-            width: 45%;
+            width: 46%;
             flex: 1;
             min-width: 0;
             padding: 10px;
@@ -547,7 +612,7 @@
 
         .total-summary {
             background: white;
-            padding: 10px 8px;
+            padding: 8px;
             border-radius: 10px;
             border: 2px solid #8b0000;
             margin-bottom: 12px;
@@ -555,13 +620,13 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
         .total-label {
-            font-size: 0.86em;
+            font-size: 0.85em;
             color: #666;
             font-weight: bold;
             display: block;
         }
         .total-number {
-            font-size: 1.9em;
+            font-size: 1.85em;
             color: #8b0000;
             font-weight: bold;
             margin: 0 4px;
@@ -577,7 +642,7 @@
         .queue-section h3 {
             color: #8b0000;
             font-size: 0.95em;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             padding-bottom: 4px;
             border-bottom: 2px solid #8b0000;
         }
@@ -589,7 +654,7 @@
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
             gap: 8px;
         }
         .queue-card {
@@ -599,11 +664,17 @@
             padding: 8px;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.15s, opacity 0.15s;
         }
+        .queue-card:active {
+            transform: scale(0.97);
+        }
+        /* 到着済みカードは控えめにして未到着を目立たせる */
         .queue-card.arrived {
-            border-color: #27ae60;
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-color: #8bc34a;
+            background: linear-gradient(135deg, #eef7ee 0%, #e1f0e1 100%);
+            opacity: 0.68;
+            cursor: default;
         }
         .queue-card.called {
             border-color: #e67e22;
@@ -647,26 +718,82 @@
             padding: 3px;
             border-radius: 4px;
         }
+        .status-waiting { background: #1976d2; color: white; }
         .status-arrived { background: #27ae60; color: white; }
         .status-called { background: #e67e22; color: white; }
         .status-absent { background: #e74c3c; color: white; }
 
-        .complete-id {
-            font-size: 3.2em;
-            color: #8b0000;
-            font-weight: bold;
-            text-align: center;
-            margin: 12px 0;
+        /* ================= 専用到着確認モーダル ================= */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
         }
-        .stop-message {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            color: #856404;
-            padding: 8px;
-            border-radius: 8px;
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-box {
+            background: #fff;
+            border: 4px solid #8b0000;
+            border-radius: 18px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 480px;
             text-align: center;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        .modal-title {
+            font-size: 1.35em;
             font-weight: bold;
-            font-size: 0.85em;
+            color: #8b0000;
+            margin-bottom: 10px;
+        }
+        .modal-guest {
+            font-size: 2.1em;
+            font-weight: bold;
+            color: #222;
+            margin: 10px 0;
+        }
+        .modal-desc {
+            font-size: 1.1em;
+            color: #444;
+            line-height: 1.5;
+            margin-bottom: 22px;
+        }
+        .modal-actions {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 12px;
+        }
+        .btn-modal-cancel {
+            background: #e0e0e0;
+            color: #333;
+            border: none;
+            padding: 16px 10px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-modal-ok {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: #fff;
+            border: none;
+            padding: 16px 10px;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.35);
+        }
+        .btn-modal-cancel:active,
+        .btn-modal-ok:active {
+            transform: scale(0.97);
         }
 
         /* 縦画面・極小幅でのフォールバック */
@@ -693,22 +820,35 @@
             <div class="info-text">順番に、ご案内いたします。</div>
         </div>
         <div class="header-controls">
-            <button type="button" id="resetWidthBtn" class="btn-header" onclick="resetPaneWidth()" title="左右を50:50に戻す">↔ 50:50</button>
+            <button type="button" id="resetWidthBtn" class="btn-header" onclick="resetPaneWidth()" title="左右を35:65に戻す">↔ 35:65</button>
             <button type="button" id="lockWidthBtn" class="btn-header" onclick="toggleWidthLock()">🔓 幅変更可</button>
             <button type="button" id="toggleKbBtn" class="btn-header" onclick="toggleKeyboardPane()">⌨️ キーボードを隠す</button>
         </div>
     </header>
 
-    <div id="resizeBadge" class="resize-badge">左 50% : 右 50%</div>
+    <div id="resizeBadge" class="resize-badge">左 35% : 右 65%</div>
+
+    <!-- 専用 到着確認モーダル -->
+    <div id="arrivalModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="arrivalModalTitle">
+        <div class="modal-box">
+            <div id="arrivalModalTitle" class="modal-title">📱 ネット予約 到着確認</div>
+            <div id="arrivalModalGuest" class="modal-guest">W-1 様</div>
+            <div class="modal-desc">ご来店ありがとうございます。<br>店舗への到着を確認しましたか？</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeArrivalModal()">キャンセル</button>
+                <button type="button" class="btn-modal-ok" onclick="confirmArrival()">✅ はい（到着しました）</button>
+            </div>
+        </div>
+    </div>
 
     <div id="workspace" class="workspace">
-        <!-- ================= 左パネル：名前入力用キーボード ================= -->
+        <!-- ================= 左パネル（初期35%）：名前入力用キーボード ================= -->
         <section class="keyboard-pane" aria-label="お名前入力キーボード">
             <div class="kb-top-bar">
                 <div class="kb-title">⌨️ お名前入力（省略可）</div>
                 <div class="kb-mode-switch" role="tablist">
-                    <button type="button" id="modeBtnHiragana" class="kb-mode-btn active" onclick="setKeyboardMode('hiragana')">あいう (ひらがな)</button>
-                    <button type="button" id="modeBtnRomaji" class="kb-mode-btn" onclick="setKeyboardMode('romaji')">ABC (ローマ字)</button>
+                    <button type="button" id="modeBtnHiragana" class="kb-mode-btn active" onclick="setKeyboardMode('hiragana')">あいう</button>
+                    <button type="button" id="modeBtnRomaji" class="kb-mode-btn" onclick="setKeyboardMode('romaji')">ABC</button>
                 </div>
             </div>
 
@@ -723,33 +863,33 @@
             <div id="hiraganaPanel" class="kb-body">
                 <div id="hiraganaGrid" class="hiragana-grid"></div>
                 <div class="kb-action-row">
-                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('dakuten')">゛(濁点)</button>
-                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('handakuten')">゜(半濁)</button>
-                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('small')">小 (ゃゅょっ)</button>
-                    <button type="button" class="kb-key kb-key-space" onclick="inputDirectChar(' ')">スペース</button>
-                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('dakuten')">゛(濁)</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('handakuten')">゜(半)</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="applyModifier('small')">小文字</button>
+                    <button type="button" class="kb-key kb-key-space" onclick="inputDirectChar(' ')">空白</button>
+                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 消す</button>
                     <button type="button" class="kb-key kb-key-clear" onclick="clearName()">全消去</button>
                 </div>
-                <div class="kb-hint">文字を押した後に「゛」「゜」「小」で変換できます（名前なしでも右から受付可）</div>
+                <div class="kb-hint">文字を押した後に「゛」「゜」「小文字」で変換（名前なしでも受付可）</div>
             </div>
 
             <!-- ローマ字モード -->
             <div id="romajiPanel" class="kb-body" style="display: none;">
                 <div id="romajiLayout" class="romaji-layout"></div>
                 <div class="kb-action-row romaji-actions">
-                    <button type="button" class="kb-key kb-key-space" onclick="handleRomajiSpace()">スペース</button>
-                    <button type="button" class="kb-key kb-key-mod" onclick="handleRomajiKey('-')">ー (伸ばす)</button>
-                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 1文字</button>
+                    <button type="button" class="kb-key kb-key-space" onclick="handleRomajiSpace()">空白</button>
+                    <button type="button" class="kb-key kb-key-mod" onclick="handleRomajiKey('-')">ー</button>
+                    <button type="button" class="kb-key kb-key-bs" onclick="handleBackspace()">⌫ 消す</button>
                     <button type="button" class="kb-key kb-key-clear" onclick="clearName()">全消去</button>
                 </div>
-                <div class="kb-hint">例: yamada → やまだ / tanaka → たなか（「ん」は nn）</div>
+                <div class="kb-hint">例: yamada → やまだ（「ん」は nn）</div>
             </div>
         </section>
 
         <!-- ================= 中央：ドラッグ用リサイザー ================= -->
         <div id="paneResizer" class="pane-resizer" role="separator" aria-orientation="vertical" aria-label="左右の横幅を調整"></div>
 
-        <!-- ================= 右パネル：本来の店舗受付画面 ================= -->
+        <!-- ================= 右パネル（初期65%）：本来の店舗受付画面 ================= -->
         <section class="original-pane">
             <!-- 受付フォーム -->
             <div class="form-panel">
@@ -773,55 +913,95 @@
                         >
                     </div>
 
+                    <!-- 大人：1〜6名ワンタップ + 増減 -->
                     <div class="number-control">
-                        <label class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</label>
-                        <div class="control-row">
-                            <button type="button" class="btn-step" onclick="changeNum('adults', -1)">−</button>
-                            <span id="display-adults" class="num-display">2</span>
-                            <button type="button" class="btn-step" onclick="changeNum('adults', 1)">+</button>
+                        <div class="control-header">
+                            <span class="control-label">👨‍👩‍👧‍👦 大人 (中学生以上)</span>
+                            <div class="inline-stepper">
+                                <button type="button" class="btn-step" onclick="changeNum('adults', -1)">−</button>
+                                <span id="display-adults" class="num-display">2</span>
+                                <button type="button" class="btn-step" onclick="changeNum('adults', 1)">+</button>
+                            </div>
                         </div>
-                        <div class="quick-nums">
-                            <button type="button" class="btn-quick" onclick="setNum('adults', 1)">1名</button>
-                            <button type="button" class="btn-quick" onclick="setNum('adults', 2)">2名</button>
-                            <button type="button" class="btn-quick" onclick="setNum('adults', 4)">4名</button>
-                            <button type="button" class="btn-quick" onclick="setNum('adults', 6)">6名</button>
+                        <div class="quick-nums cols-6" id="quick-adults">
+                            <button type="button" class="btn-quick" data-val="1" onclick="setNum('adults', 1)">1名</button>
+                            <button type="button" class="btn-quick active" data-val="2" onclick="setNum('adults', 2)">2名</button>
+                            <button type="button" class="btn-quick" data-val="3" onclick="setNum('adults', 3)">3名</button>
+                            <button type="button" class="btn-quick" data-val="4" onclick="setNum('adults', 4)">4名</button>
+                            <button type="button" class="btn-quick" data-val="5" onclick="setNum('adults', 5)">5名</button>
+                            <button type="button" class="btn-quick" data-val="6" onclick="setNum('adults', 6)">6名</button>
                         </div>
                     </div>
 
+                    <!-- 子供：0〜3名ワンタップ + 増減 -->
                     <div class="number-control">
-                        <label class="control-label">👧 子供 (小学生)</label>
-                        <div class="control-row">
-                            <button type="button" class="btn-step" onclick="changeNum('children', -1)">−</button>
-                            <span id="display-children" class="num-display">0</span>
-                            <button type="button" class="btn-step" onclick="changeNum('children', 1)">+</button>
+                        <div class="control-header">
+                            <span class="control-label">👧 子供 (小学生)</span>
+                            <div class="inline-stepper">
+                                <button type="button" class="btn-step" onclick="changeNum('children', -1)">−</button>
+                                <span id="display-children" class="num-display">0</span>
+                                <button type="button" class="btn-step" onclick="changeNum('children', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="quick-nums cols-4" id="quick-children">
+                            <button type="button" class="btn-quick active" data-val="0" onclick="setNum('children', 0)">0名</button>
+                            <button type="button" class="btn-quick" data-val="1" onclick="setNum('children', 1)">1名</button>
+                            <button type="button" class="btn-quick" data-val="2" onclick="setNum('children', 2)">2名</button>
+                            <button type="button" class="btn-quick" data-val="3" onclick="setNum('children', 3)">3名</button>
                         </div>
                     </div>
 
+                    <!-- 幼児：0〜3名ワンタップ + 増減 -->
                     <div class="number-control">
-                        <label class="control-label">👶 幼児 (未就学児)</label>
-                        <div class="control-row">
-                            <button type="button" class="btn-step" onclick="changeNum('infants', -1)">−</button>
-                            <span id="display-infants" class="num-display">0</span>
-                            <button type="button" class="btn-step" onclick="changeNum('infants', 1)">+</button>
+                        <div class="control-header">
+                            <span class="control-label">👶 幼児 (未就学児)</span>
+                            <div class="inline-stepper">
+                                <button type="button" class="btn-step" onclick="changeNum('infants', -1)">−</button>
+                                <span id="display-infants" class="num-display">0</span>
+                                <button type="button" class="btn-step" onclick="changeNum('infants', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="quick-nums cols-4" id="quick-infants">
+                            <button type="button" class="btn-quick active" data-val="0" onclick="setNum('infants', 0)">0名</button>
+                            <button type="button" class="btn-quick" data-val="1" onclick="setNum('infants', 1)">1名</button>
+                            <button type="button" class="btn-quick" data-val="2" onclick="setNum('infants', 2)">2名</button>
+                            <button type="button" class="btn-quick" data-val="3" onclick="setNum('infants', 3)">3名</button>
                         </div>
                     </div>
 
+                    <!-- 座席選択（リアルタイム待ち組数表示） -->
                     <div>
                         <label class="control-label">🪑 座席のご希望</label>
                         <div class="seat-buttons">
-                            <button type="button" id="seat-どこでも" class="btn-seat selected" onclick="selectSeat('どこでも')">どこでも</button>
-                            <button type="button" id="seat-カウンター" class="btn-seat" onclick="selectSeat('カウンター')">カウンター</button>
-                            <button type="button" id="seat-テーブル" class="btn-seat" onclick="selectSeat('テーブル')">テーブル</button>
-                            <button type="button" id="seat-お座敷" class="btn-seat" onclick="selectSeat('お座敷')">お座敷</button>
+                            <button type="button" id="seat-どこでも" data-seat="どこでも" class="btn-seat selected" onclick="selectSeat('どこでも')">
+                                <span>どこでも</span>
+                                <span id="wait-seat-どこでも" class="seat-wait-badge">0組待ち</span>
+                            </button>
+                            <button type="button" id="seat-カウンター" data-seat="カウンター" class="btn-seat" onclick="selectSeat('カウンター')">
+                                <span>カウンター</span>
+                                <span id="wait-seat-カウンター" class="seat-wait-badge">0組待ち</span>
+                            </button>
+                            <button type="button" id="seat-テーブル" data-seat="テーブル" class="btn-seat" onclick="selectSeat('テーブル')">
+                                <span>テーブル</span>
+                                <span id="wait-seat-テーブル" class="seat-wait-badge">0組待ち</span>
+                            </button>
+                            <button type="button" id="seat-お座敷" data-seat="お座敷" class="btn-seat" onclick="selectSeat('お座敷')">
+                                <span>お座敷</span>
+                                <span id="wait-seat-お座敷" class="seat-wait-badge">0組待ち</span>
+                            </button>
                         </div>
                     </div>
 
                     <button type="button" id="regBtn" class="btn-submit" onclick="send()">✓ 受付確定（発券する）</button>
                 </div>
 
+                <!-- 受付完了画面（5秒表示＋プリンター案内） -->
                 <div id="ticketArea" class="form-box" style="display:none; border: 3px solid #8b0000;">
-                    <p style="color:#27ae60; font-size:1.15em; font-weight:bold; text-align:center; margin-bottom:6px;">✅ 受付完了しました</p>
+                    <p style="color:#27ae60; font-size:1.2em; font-weight:bold; text-align:center;">✅ 受付完了しました</p>
                     <div id="num" class="complete-id">--</div>
+                    <div class="printer-guide">
+                        🖨️ 下のプリンターから<br>番号札をお取りください
+                    </div>
                     <button type="button" class="btn-submit" onclick="closeTicket()" style="background:#666;">次の受付へ</button>
                 </div>
             </div>
@@ -836,7 +1016,7 @@
 
                 <div class="queue-section">
                     <h3>📱 ネット予約の方 - 到着確認</h3>
-                    <p class="queue-subnote">※ お客様に番号をタップしてもらってください</p>
+                    <p class="queue-subnote">※ ご来店時はご自身の番号をタップしてください（未到着を先頭表示）</p>
                     <div id="queueListWeb" class="grid-container"></div>
                 </div>
 
@@ -857,10 +1037,14 @@
         const socket = io();
         const type = 'shop';
         const MAX_NAME_LENGTH = 20;
+        const IDLE_RESET_MS = 60000;      // 無操作60秒で自動リセット
+        const TICKET_DISPLAY_MS = 5000;   // 完了画面を5秒表示
+        const SUBMIT_TIMEOUT_MS = 10000;  // 通信タイムアウト復帰用
 
-        // 横幅リサイズ設定
-        const STORAGE_KEY_WIDTH = 'shop_left_pane_width_pct';
+        // 横幅リサイズ設定（デフォルト35%）
+        const STORAGE_KEY_WIDTH = 'shop_left_pane_width_pct_v2';
         const STORAGE_KEY_LOCK = 'shop_left_pane_locked';
+        const DEFAULT_LEFT_PCT = 35;
         const MIN_LEFT_PCT = 25;
         const MAX_LEFT_PCT = 70;
         let isWidthLocked = false;
@@ -868,9 +1052,15 @@
 
         let nums = { adults: 2, children: 0, infants: 0 };
         let isAccepting = true;
+        let isSubmitting = false;
+        let submitFailSafeTimer = null;
         let selectedSeat = 'どこでも';
         let blockedSeats = [];
         let ticketAutoCloseTimer = null;
+        let idleResetTimer = null;
+
+        // 到着確認モーダル用状態
+        let pendingArrivalId = null;
 
         // キーボード状態
         let currentKbMode = 'hiragana';
@@ -972,7 +1162,41 @@
         const ROMAJI_KEYS = Object.keys(ROMAJI_TABLE);
 
         // ============================================================
-        // 2. 左右横幅リサイズ制御（Pointer Events + 永続化 + ロック）
+        // 2. 無操作60秒自動リセット
+        // ============================================================
+        function isFormDirty() {
+            return (
+                committedName.length > 0 ||
+                romajiBuffer.length > 0 ||
+                nums.adults !== 2 ||
+                nums.children !== 0 ||
+                nums.infants !== 0 ||
+                selectedSeat !== 'どこでも'
+            );
+        }
+
+        function resetIdleTimer() {
+            if (idleResetTimer) clearTimeout(idleResetTimer);
+            idleResetTimer = setTimeout(() => {
+                const ticketVisible = document.getElementById('ticketArea').style.display !== 'none';
+                if (!ticketVisible && !isSubmitting && isFormDirty()) {
+                    resetFormState();
+                }
+            }, IDLE_RESET_MS);
+        }
+
+        function resetFormState() {
+            nums = { adults: 2, children: 0, infants: 0 };
+            selectedSeat = 'どこでも';
+            clearName();
+            updateDisplays();
+            selectSeat('どこでも');
+        }
+
+        document.addEventListener('pointerdown', resetIdleTimer, { passive: true });
+
+        // ============================================================
+        // 3. 左右横幅リサイズ制御（初期35%・ドラッグ調整・ロック）
         // ============================================================
         function applyLeftWidth(pct, save = true) {
             const clamped = Math.min(MAX_LEFT_PCT, Math.max(MIN_LEFT_PCT, Math.round(pct)));
@@ -988,8 +1212,8 @@
         }
 
         function resetPaneWidth() {
-            applyLeftWidth(50, true);
-            showResizeBadge(50, 900);
+            applyLeftWidth(DEFAULT_LEFT_PCT, true);
+            showResizeBadge(DEFAULT_LEFT_PCT, 900);
         }
 
         function updateWidthLockUI() {
@@ -1024,23 +1248,23 @@
         }
 
         function hideResizeBadge() {
-            const badge = document.getElementById('resizeBadge');
-            badge.style.display = 'none';
+            document.getElementById('resizeBadge').style.display = 'none';
         }
 
         function initResizer() {
             const workspace = document.getElementById('workspace');
             const resizer = document.getElementById('paneResizer');
 
-            // 保存済み設定の復元
             try {
                 const savedPct = parseFloat(localStorage.getItem(STORAGE_KEY_WIDTH));
                 if (!Number.isNaN(savedPct)) {
                     applyLeftWidth(savedPct, false);
+                } else {
+                    applyLeftWidth(DEFAULT_LEFT_PCT, false);
                 }
                 isWidthLocked = localStorage.getItem(STORAGE_KEY_LOCK) === 'true';
             } catch (e) {
-                console.warn('設定の読み込みに失敗:', e);
+                applyLeftWidth(DEFAULT_LEFT_PCT, false);
             }
             updateWidthLockUI();
 
@@ -1081,7 +1305,7 @@
         }
 
         // ============================================================
-        // 3. キーボードUI生成・操作ロジック
+        // 4. キーボードUI生成・操作ロジック
         // ============================================================
         function buildKeyboards() {
             const hGrid = document.getElementById('hiraganaGrid');
@@ -1276,7 +1500,7 @@
         }
 
         // ============================================================
-        // 4. 受付フォーム・待ち状況管理
+        // 5. 受付フォーム・待ち状況管理・専用到着モーダル
         // ============================================================
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -1292,6 +1516,15 @@
             document.getElementById('display-adults').innerText = nums.adults;
             document.getElementById('display-children').innerText = nums.children;
             document.getElementById('display-infants').innerText = nums.infants;
+
+            ['adults', 'children', 'infants'].forEach(key => {
+                const container = document.getElementById(`quick-${key}`);
+                if (!container) return;
+                container.querySelectorAll('.btn-quick').forEach(btn => {
+                    const val = Number(btn.getAttribute('data-val'));
+                    btn.classList.toggle('active', val === nums[key]);
+                });
+            });
         }
 
         function changeNum(key, step) {
@@ -1309,7 +1542,7 @@
             if (blockedSeats.includes(seat)) return;
             selectedSeat = seat;
             document.querySelectorAll('.btn-seat').forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent === seat);
+                btn.classList.toggle('selected', btn.getAttribute('data-seat') === seat);
             });
         }
 
@@ -1323,6 +1556,41 @@
                     selectSeat('どこでも');
                 }
             });
+        }
+
+        function updateSeatWaitCounts(queue) {
+            const counts = { 'どこでも': 0, 'カウンター': 0, 'テーブル': 0, 'お座敷': 0 };
+            queue.forEach(g => {
+                if (Object.prototype.hasOwnProperty.call(counts, g.pref)) {
+                    counts[g.pref]++;
+                }
+            });
+            Object.keys(counts).forEach(seat => {
+                const el = document.getElementById(`wait-seat-${seat}`);
+                if (el) {
+                    el.textContent = `${counts[seat]}組待ち`;
+                }
+            });
+        }
+
+        // 専用 到着確認モーダル制御
+        function openArrivalModal(displayId, guestName, alreadyArrived) {
+            if (alreadyArrived) return;
+            pendingArrivalId = displayId;
+            const guestLabel = guestName ? `${displayId}（${guestName}様）` : `${displayId} 様`;
+            document.getElementById('arrivalModalGuest').textContent = guestLabel;
+            document.getElementById('arrivalModal').classList.add('open');
+        }
+
+        function closeArrivalModal() {
+            pendingArrivalId = null;
+            document.getElementById('arrivalModal').classList.remove('open');
+        }
+
+        function confirmArrival() {
+            if (!pendingArrivalId) return;
+            socket.emit('markArrived', { displayId: pendingArrivalId });
+            closeArrivalModal();
         }
 
         socket.on('init', d => {
@@ -1345,9 +1613,14 @@
         function updateQueue(d) {
             const queue = Array.isArray(d.queue) ? d.queue : [];
             document.getElementById('totalWaitCount').innerText = queue.length;
+            updateSeatWaitCounts(queue);
 
-            const webQueue = queue.filter(g => g.type === 'web');
+            // 未到着を先頭、到着済みを後方にソート
+            const webQueue = queue
+                .filter(g => g.type === 'web')
+                .sort((a, b) => Number(Boolean(a.arrived)) - Number(Boolean(b.arrived)));
             const shopQueue = queue.filter(g => g.type === 'shop');
+
             const listWeb = document.getElementById('queueListWeb');
             const listShop = document.getElementById('queueListShop');
 
@@ -1355,7 +1628,7 @@
                 listWeb.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:16px; color:#999; font-size:0.88em;">ネット予約のお客様はいません</div>';
             } else {
                 listWeb.innerHTML = webQueue.map(g => {
-                    let statusBadge = '';
+                    let statusBadge = '<div class="queue-status status-waiting">👆 タップで到着</div>';
                     let cardClass = '';
                     if (g.arrived) {
                         statusBadge = '<div class="queue-status status-arrived">✅ 到着済み</div>';
@@ -1368,10 +1641,11 @@
                         cardClass = 'absent';
                     }
                     const safeId = escapeHtml(g.displayId);
-                    const safeName = g.name ? `<div class="queue-name">${escapeHtml(g.name)}様</div>` : '';
+                    const safeNameRaw = escapeHtml(g.name || '');
+                    const safeName = g.name ? `<div class="queue-name">${safeNameRaw}様</div>` : '';
                     const safeArrival = g.arrivalTime ? `<div style="color:#d35400;font-weight:bold;margin-bottom:2px;">⏰ ${escapeHtml(g.arrivalTime)}</div>` : '';
                     return `
-                        <div class="queue-card ${cardClass}" onclick="markArrived('${safeId}', ${Boolean(g.arrived)})">
+                        <div class="queue-card ${cardClass}" onclick="openArrivalModal('${safeId}', '${safeNameRaw}', ${Boolean(g.arrived)})">
                             <span class="queue-id">${safeId}</span>
                             ${safeName}
                             <div class="queue-info">
@@ -1417,16 +1691,6 @@
             }
         }
 
-        function markArrived(displayId, alreadyArrived) {
-            if (alreadyArrived) {
-                alert('このお客様は既に到着済みです');
-                return;
-            }
-            if (confirm(`${displayId} のお客様が到着されましたか？`)) {
-                socket.emit('markArrived', { displayId });
-            }
-        }
-
         socket.on('statusChange', s => {
             isAccepting = s.isAccepting !== undefined ? s.isAccepting : s;
             updateAcceptanceUI();
@@ -1435,27 +1699,44 @@
         socket.on('guestArrived', () => playSound('arrival'));
         socket.on('guestCalled', () => playSound('call'));
         socket.on('dailyReset', () => {
-            alert('🔄 日次リセットが実行されました。新しい1日が始まります！');
             location.reload();
         });
 
         function updateAcceptanceUI() {
             const btn = document.getElementById('regBtn');
             const msg = document.getElementById('stopMessage');
-            btn.disabled = !isAccepting || nums.adults < 1;
-            btn.innerText = isAccepting ? '✓ 受付確定（発券する）' : '⏸️ 受付停止中';
+            if (isSubmitting) {
+                btn.disabled = true;
+                btn.innerText = '⏳ 発券中...';
+            } else {
+                btn.disabled = !isAccepting || nums.adults < 1;
+                btn.innerText = isAccepting ? '✓ 受付確定（発券する）' : '⏸️ 受付停止中';
+            }
             msg.style.display = isAccepting ? 'none' : 'block';
         }
 
+        function releaseSubmitLock() {
+            isSubmitting = false;
+            if (submitFailSafeTimer) {
+                clearTimeout(submitFailSafeTimer);
+                submitFailSafeTimer = null;
+            }
+            updateAcceptanceUI();
+        }
+
         function send() {
-            if (!isAccepting) {
-                alert('現在受付を停止しております。');
-                return;
-            }
-            if (nums.adults < 1) {
-                alert('大人の人数は1名以上必要です。');
-                return;
-            }
+            if (!isAccepting || isSubmitting) return;
+            if (nums.adults < 1) return;
+
+            // 二重発券ブロック
+            isSubmitting = true;
+            updateAcceptanceUI();
+
+            // 通信断などで応答がない場合のフェイルセーフ（10秒）
+            submitFailSafeTimer = setTimeout(() => {
+                releaseSubmitLock();
+            }, SUBMIT_TIMEOUT_MS);
+
             flushPendingRomaji();
             syncNameDisplay();
             const name = committedName.trim();
@@ -1469,24 +1750,24 @@
             }
             document.getElementById('ticketArea').style.display = 'none';
             document.getElementById('formArea').style.display = 'flex';
-            nums = { adults: 2, children: 0, infants: 0 };
-            selectedSeat = 'どこでも';
-            clearName();
-            updateDisplays();
-            selectSeat('どこでも');
+            resetFormState();
+            releaseSubmitLock();
         }
 
         socket.on('registered', g => {
             if (g.type === 'shop') {
+                releaseSubmitLock();
+                playSound('registered');
                 document.getElementById('formArea').style.display = 'none';
                 document.getElementById('ticketArea').style.display = 'flex';
                 document.getElementById('num').innerText = g.displayId;
                 if (ticketAutoCloseTimer) clearTimeout(ticketAutoCloseTimer);
-                ticketAutoCloseTimer = setTimeout(() => { closeTicket(); }, 3000);
+                ticketAutoCloseTimer = setTimeout(() => { closeTicket(); }, TICKET_DISPLAY_MS);
             }
         });
 
         socket.on('error', err => {
+            releaseSubmitLock();
             alert('エラー: ' + (err && err.message ? err.message : '不明なエラー'));
         });
 
@@ -1495,21 +1776,40 @@
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 if (!AudioCtx) return;
                 const audioContext = new AudioCtx();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                if (soundType === 'call') {
-                    oscillator.frequency.value = 880;
-                    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.5);
+                const now = audioContext.currentTime;
+
+                if (soundType === 'registered') {
+                    // 発券完了音「ピロン♪」（2音階）
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.type = 'sine';
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.setValueAtTime(1174.66, now + 0.11);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (soundType === 'call') {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = 880;
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
                 } else if (soundType === 'arrival') {
-                    oscillator.frequency.value = 800;
-                    gainNode.gain.value = 0.3;
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.2);
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = 800;
+                    gain.gain.value = 0.3;
+                    osc.start(now);
+                    osc.stop(now + 0.2);
                 }
             } catch (e) {
                 console.warn('音声再生に失敗しました:', e);
@@ -1519,7 +1819,9 @@
         // 初期化
         initResizer();
         buildKeyboards();
+        updateDisplays();
         syncNameDisplay();
+        resetIdleTimer();
     </script>
 </body>
 </html>
